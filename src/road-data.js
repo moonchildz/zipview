@@ -13,6 +13,9 @@ export function roadProfile(tags) {
 
 // Match the rendered PlaneGeometry triangles, not the nearest DEM sample.
 export function terrainHeight(terrain, x, z) {
+  if (terrain.local && Math.abs(x) <= terrain.local.extent && Math.abs(z) <= terrain.local.extent) {
+    return terrainHeight(terrain.local, x, z);
+  }
   const { size, extent, heights } = terrain;
   const gx = Math.max(0, Math.min(size - 1, (x + extent) / (extent * 2) * (size - 1)));
   const gz = Math.max(0, Math.min(size - 1, (z + extent) / (extent * 2) * (size - 1)));

@@ -34,8 +34,9 @@ export function reviewKml(data, cameras, state, dom = document) {
     parent.append(node); return node;
   };
   const root = add(xml.documentElement, 'Document');
-  add(root, 'name', '206동 시점과 OSM 모델 대조');
-  add(root, 'description', 'OSM contributors / ODbL. 명칭은 OSM 태그 및 부지 포함 추정. 형상/높이/시점 미검증. Google 영상 미포함. 지형 기준과 화각은 Earth와 다를 수 있음.');
+  const targetLabel = data.targetLabel ?? '206동';
+  add(root, 'name', `${targetLabel} 시점과 지리 모델 대조`);
+  add(root, 'description', 'OSM contributors / ODbL. 수치지도 보정 모드에서는 국토지리정보원 2025 수치지도 외곽선/층수 및 보간 지형 포함. 형상/높이/시점 미검증. Google 영상 미포함. 지형 기준과 화각은 Earth와 다를 수 있음.');
   for (const [id, color] of [['buildings','ff57a817'],['roads','ff2467ed']]) {
     const style = add(root,'Style'); style.setAttribute('id',id);
     const line = add(style,'LineStyle'); add(line,'color',color); add(line,'width',2);
@@ -43,16 +44,16 @@ export function reviewKml(data, cameras, state, dom = document) {
   }
   cameras.forEach((camera, i) => {
     const geo = geographicPoint(camera.position.x, camera.position.z, data.center);
-    const p = add(root,'Placemark'); add(p,'name',`206동 ${state.floors[i]}층 후보 시점`);
+    const p = add(root,'Placemark'); add(p,'name',`${targetLabel} ${state.floors[i]}층 후보 시점`);
     const c = add(p,'Camera');
     for (const [key,value] of Object.entries({longitude:geo.lon,latitude:geo.lat,altitude:camera.position.y,heading:state.bearing,tilt:90+state.pitch,roll:0,altitudeMode:'absolute'})) add(c,key,value);
     const point = add(p,'Point'); add(point,'altitudeMode','absolute'); add(point,'coordinates',`${geo.lon},${geo.lat},${camera.position.y}`);
   });
   const coordinates = points => points.map(p => {const g = geographicPoint(...p,data.center); return `${g.lon},${g.lat},0`;}).join(' ');
   const nearby = points => points.some(p => Math.hypot(...p)<500);
-  const buildings = add(root,'Folder'); add(buildings,'name','건물 외곽 · OSM');
+  const buildings = add(root,'Folder'); add(buildings,'name','건물 외곽 · OSM / 적용된 수치지도 보정');
   for (const b of data.buildings.filter(b => nearby(b.points))) {
-    const p = add(buildings,'Placemark'); add(p,'name',b.label); add(p,'description',`${b.source}\n높이 ${b.height}m (${b.heightSource})\n${b.siteSource ?? ''}`); add(p,'styleUrl','#buildings');
+    const p = add(buildings,'Placemark'); add(p,'name',b.label); add(p,'description',`${b.source}\n높이 ${b.height}m (${b.heightSource})\n${b.siteSource ?? ''}\n수치지도 외곽선 UFID: ${b.geometrySource ?? '미적용'}\n지반: ${b.base}m (${b.baseSource ?? '기존 지형 추정'})`); add(p,'styleUrl','#buildings');
     const polygon = add(p,'Polygon'); add(polygon,'altitudeMode','clampToGround');
     const ring = add(add(polygon,'outerBoundaryIs'),'LinearRing');
     const points = b.points[0].every((v,i) => v === b.points.at(-1)[i]) ? b.points : [...b.points,b.points[0]];

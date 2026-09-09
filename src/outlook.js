@@ -5,16 +5,21 @@ import { buildLandmarks, landmarkSight } from './landmarks.js';
 import { buildStreets } from './streets.js';
 import { buildFacades } from './facades.js';
 import { ModelInspector } from './model-inspector.js';
+import { terrainGeometries } from './terrain-mesh.js';
 
 export class OutlookScene {
-  constructor(host, onChange) {
+  constructor(host, onChange, options = {}) {
+    this.options = options;
     this.host = host;
     this.onChange = onChange;
     this.state = { floors: [5, 10], bearing: 0, pitch: -4, fov: 65, floorHeight: 2.9, eyeHeight: 1.5, offset: 0, east: 0, north: 0 };
+    if (options.floors) this.state.floors = [...options.floors];
+    this.state.fov = options.fov ?? 65;
+    this.state.pitch = options.pitch ?? -4;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     host.prepend(this.renderer.domElement);
-    this.renderer.domElement.setAttribute('aria-label', '206동 5층과 10층 추정 전망 비교');
+    this.renderer.domElement.setAttribute('aria-label', options.label ?? '206동 5층과 10층 추정 전망 비교');
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color('#b9d8e8');
     this.scene.fog = new THREE.Fog('#c6dce5', 1800, 24000);
@@ -40,28 +45,40 @@ export class OutlookScene {
     for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(type, () => { this.drag = null; this.dragStart = null; });
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
-      this.state.fov = THREE.MathUtils.clamp(this.state.fov + e.deltaY * 0.025, 35, 95);
+      this.state.fov = THREE.MathUtils.clamp(this.state.fov + e.deltaY * 0.025, 35, this.options.horizontalFov ? 75 : 95);
       this.update();
     }, { passive: false });
   }
 
   async load() {
-    const response = await fetch('/research/sinchon-prugio/outlook/scene.json');
+    const response = await fetch(this.options.sceneUrl ?? '/research/sinchon-prugio/outlook/scene.json');
     if (!response.ok) throw new Error('전망 데이터 파일을 불러오지 못했습니다.');
     this.data = await response.json();
+    const original = new URLSearchParams(location.search).get('terrain') === 'original';
+    const correctionResponse = original || this.options.correction === false ? null : await fetch('/research/sinchon-prugio/outlook/mapinfo-correction.json');
+    if (correctionResponse && !correctionResponse.ok) throw new Error('수치지도 보정 데이터를 불러오지 못했습니다.');
+    const correction = correctionResponse ? await correctionResponse.json() : null;
+    if (correction) {
+      this.data.terrain.local = correction.terrain;
+      const overrides = new Map(correction.buildings.map(b => [b.id, b]));
+      for (const building of this.data.buildings) Object.assign(building, overrides.get(building.id) ?? {});
+    }
+    const note = document.querySelector('#terrain-source');
+    note.replaceChildren(document.createTextNode(correction ? `수치지도 보정 적용: ${correction.status} ` : '보정 전 OSM·기존 지형 모델 '));
+    const comparison = document.createElement('a');
+    comparison.href = original ? location.pathname : `${location.pathname}?terrain=original`;
+    comparison.textContent = original ? '보정 결과 보기' : '보정 전과 비교';
+    note.append(comparison);
+    if (this.options.sourceNote) note.textContent = this.options.sourceNote;
+    this.host.dataset.terrainSource = this.options.correction === false ? 'mapzen-estimated' : original ? 'original' : 'ngii-interpolated';
     this.target = this.data.buildings.find(b => b.id === this.data.targetBuildingId);
     this.state.bearing = this.data.window.bearing;
     this.buildLocator();
-    const { size, extent, heights } = this.data.terrain;
-    const terrain = new THREE.PlaneGeometry(extent * 2, extent * 2, size - 1, size - 1);
-    terrain.rotateX(-Math.PI / 2);
-    const positions = terrain.attributes.position;
-    for (let i = 0; i < positions.count; i++) positions.setY(i, heights[i]);
-    terrain.computeVertexNormals();
-    const terrainMesh = new THREE.Mesh(terrain, new THREE.MeshStandardMaterial({ color: '#82967d', roughness: 1 }));
-    this.scene.add(terrainMesh);
-    this.terrainMesh = terrainMesh;
-    this.blockers = [terrainMesh];
+    const terrainMeshes = terrainGeometries(this.data.terrain).map(geometry => new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: '#82967d', roughness: 1 })));
+    this.scene.add(...terrainMeshes);
+    this.terrainMesh = terrainMeshes[0];
+    this.terrainMeshes = terrainMeshes;
+    this.blockers = [...terrainMeshes];
     this.pickables = [];
     const pickMaterial = new THREE.MeshBasicMaterial();
     const groups = new Map();
@@ -155,7 +172,7 @@ export class OutlookScene {
 
   reset() {
     if (!this.data) return;
-    Object.assign(this.state, { bearing: this.data.window.bearing, pitch: -4, fov: 65, floorHeight: 2.9, eyeHeight: 1.5, offset: 0, east: 0, north: 0 });
+    Object.assign(this.state, { bearing: this.data.window.bearing, pitch: this.options.pitch ?? -4, fov: this.options.fov ?? 65, floorHeight: 2.9, eyeHeight: 1.5, offset: 0, east: 0, north: 0 });
     this.update();
   }
 
@@ -201,6 +218,9 @@ export class OutlookScene {
       const w = stacked ? width : Math.floor(width / 2), h = stacked ? Math.floor(height / 2) : height;
       const x = stacked ? 0 : i * w, y = stacked ? (1 - i) * h : 0;
       camera.aspect = w / h;
+      camera.fov = this.options.horizontalFov
+        ? THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(this.state.fov) / 2) / camera.aspect))
+        : this.state.fov;
       camera.updateProjectionMatrix();
       this.renderer.setViewport(x, y, w, h);
       this.renderer.setScissor(x, y, w, h);
@@ -228,5 +248,8 @@ export class OutlookScene {
     this.host.dataset.ready = 'true';
     this.host.dataset.cameraHeights = this.cameras.map(c => c.position.y.toFixed(2)).join(',');
     this.host.dataset.bearing = this.state.bearing.toFixed(2);
+    this.host.dataset.horizontalFov = (2 * Math.atan(Math.tan(this.cameras[0].fov * Math.PI / 360) * this.cameras[0].aspect) * 180 / Math.PI).toFixed(2);
+    this.host.dataset.verticalFov = this.cameras[0].fov.toFixed(2);
+    this.host.dataset.pitch = this.state.pitch.toFixed(2);
   }
 }

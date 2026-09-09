@@ -1,0 +1,62 @@
+{
+  "method": "pyproj.Geod WGS84 inverse on original OSM vertices; outward side from scene polygon",
+  "unitWindowVerified": false,
+  "facades": [
+    {
+      "edge": 6,
+      "modelBearing": 138.84409207621013,
+      "wgs84Bearing": 138.96395263671752,
+      "differenceDegrees": 0.1198605605073908,
+      "lengthMeters": 20.320076806795626
+    },
+    {
+      "edge": 7,
+      "modelBearing": 48.83661253126303,
+      "wgs84Bearing": 48.7166948492157,
+      "differenceDegrees": -0.11991768204734399,
+      "lengthMeters": 12.465689414939698
+    },
+    {
+      "edge": 3,
+      "modelBearing": 184.35513482383857,
+      "wgs84Bearing": 184.33677641004783,
+      "differenceDegrees": -0.018358413790735995,
+      "lengthMeters": 16.585193713754073
+    },
+    {
+      "edge": 1,
+      "modelBearing": 228.84279585671976,
+      "wgs84Bearing": 228.722781764432,
+      "differenceDegrees": -0.12001409228776083,
+      "lengthMeters": 15.07851832347146
+    },
+    {
+      "edge": 9,
+      "modelBearing": 318.8459403575065,
+      "wgs84Bearing": 318.96585972746396,
+      "differenceDegrees": 0.1199193699574721,
+      "lengthMeters": 10.177316713039492
+    },
+    {
+      "edge": 8,
+      "modelBearing": 318.8434745888142,
+      "wgs84Bearing": 318.9633730924709,
+      "differenceDegrees": 0.11989850365665689,
+      "lengthMeters": 10.751578992414439
+    },
+    {
+      "edge": 0,
+      "modelBearing": 318.83996219316276,
+      "wgs84Bearing": 318.9598719134811,
+      "differenceDegrees": 0.1199097203183328,
+      "lengthMeters": 10.717016606190983
+    },
+    {
+      "edge": 2,
+      "modelBearing": 274.39569829937363,
+      "wgs84Bearing": 274.41424573640415,
+      "differenceDegrees": 0.018547437030520086,
+      "lengthMeters": 13.658788883693495
+    }
+  ]
+}

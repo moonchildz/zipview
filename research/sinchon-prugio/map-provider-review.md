@@ -1,5 +1,18 @@
 # Google / Kakao feasibility check
 
+## Authenticated follow-up — 2026-09-10
+
+- Used the user-provided local Google key without printing it or adding it to source control. Authentication succeeded (HTTP 200).
+- Name queries for Sinchon Prugio complex 2 buildings 210, 206 and 209 each resolved to the same complex-level POINT, with no display polygon. The 206/209 requests also requested subDestinations; neither returned any.
+- Location queries at the current OSM model's 210 and 206 footprint vertex means, filtered to BUILDING, both returned HTTP 200 with zero destinations. These are model-derived query points, not surveyed building locations.
+- Six requests were sent in this follow-up: an initial shell-encoding-affected query (not usable evidence), three correctly encoded name queries, and two building-filtered location queries. No retries or bulk lookup were run.
+- These tested queries supplied no individually identified building geometry suitable for correcting location or footprint size. This does not establish that all Google query methods or all nearby buildings lack geometry.
+- The documented Geocoding PlaceView schema has no building-height field. Ground elevation is a separate quantity and must not be used as building height.
+- Existing model inspection: Sinchon Prugio 210 (OSM way 902872238) has an assumed 15 m height and no level count; 206 (way 777716407) has OSM height 50 m and 17 levels. Neither was independently verified in this follow-up.
+- No provider geometry was saved and scene.json was not changed. Correcting these buildings now requires an independently verified footprint/dong mapping and building height or floor-count source, such as official building records and plans. Do not shift individual buildings to the shared complex POI.
+
+The original unauthenticated check below is retained as historical context.
+
 Checked: 2026-09-09. This is a capability/authentication check, not verified building data.
 
 ## Actual attempts

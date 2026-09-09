@@ -7,6 +7,9 @@ import { OutlookScene } from './outlook.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
+const xiLink = document.createElement('a');
+xiLink.href = '/?site=xi'; xiLink.textContent = '경희궁자이 204동 201호';
+document.querySelector('.examples').append(xiLink);
 let selectedPlan = plans.find(p => p.id === '59D');
 let selection = lookup('북아현로1길 50', '206', '504');
 let view = 'outlook';
