@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>206동 4호 라인 방향 검토</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:28px;font-family:'Malgun Gothic',sans-serif;color:#26372f;background:white;letter-spacing:0}main{max-width:1200px;margin:auto}h1{font-size:23px;margin:0 0 10px}p{font-size:14px;line-height:1.8;margin:8px 0}h2{font-size:16px;margin:22px 0 10px}.maps{display:grid;grid-template-columns:1.25fr 1fr;gap:24px;align-items:start}svg{display:block;width:100%;height:auto;background:#fafbf8;border:1px solid #dce2dc}.legend{display:grid;gap:12px;margin-top:20px;padding:16px 0;border-top:1px solid #dce2dc}.red{color:#bd302d}.blue{color:#245bc5}.note{color:#68756e;font-size:12px}a{color:#176957}@media(max-width:700px){body{padding:18px}.maps{grid-template-columns:1fr}h1{font-size:20px}}
+</style>
+<main>
+<h1>206동 4호 라인: 위치와 방향 검토</h1>
+<p>원본 배치도 기준 북쪽은 위. 원과 점은 배치도 판독 위치이며, 측량 좌표가 아닙니다.</p>
+<div class="maps">
+<section><h2>단지 전체 / 206동 위치</h2>
+<svg viewBox="35 42 692 431" role="img" aria-label="원본 단지 배치도, 상단 오른쪽 끝 V자 206동에 파란 원">
+<image href="../research/sinchon-prugio/images/site-and-units.jpg" x="0" y="0" width="764" height="1075"/>
+<circle cx="565" cy="143" r="34" fill="none" stroke="#245bc5" stroke-width="2.5"/>
+<path d="M565 109 V83 H490" fill="none" stroke="#245bc5" stroke-width="2"/>
+<text x="443" y="86" fill="#245bc5" font-size="13" font-weight="bold">206동</text>
+</svg></section>
+<section><h2>206동 확대 / 4호 라인 추정 위치</h2>
+<svg viewBox="520 102 190 145" role="img" aria-label="206동 오른쪽 위 날개에 위치 점, 빨간 기존 동향 화살표와 파란 남동향 후보 화살표">
+<defs><marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#bd302d"/></marker><marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#245bc5"/></marker></defs>
+<image href="../research/sinchon-prugio/images/site-and-units.jpg" x="0" y="0" width="764" height="1075"/>
+<circle cx="584" cy="134" r="3" fill="#245bc5" stroke="white" stroke-width="1"/>
+<path d="M584 134 L576 109" fill="none" stroke="#245bc5" stroke-width="1"/>
+<text x="539" y="108" fill="#245bc5" font-size="5.5" font-weight="bold">4호 라인 위치 추정</text>
+<path d="M594 140 L677 122.4" fill="none" stroke="#bd302d" stroke-width="1.7" marker-end="url(#red)"/>
+<text x="645" y="113" fill="#bd302d" font-size="6" font-weight="bold">기존 78°</text>
+<path d="M587 146 L625 186" fill="none" stroke="#245bc5" stroke-width="1.7" stroke-dasharray="4 2" marker-end="url(#blue)"/>
+<text x="590" y="200" fill="#245bc5" font-size="6" font-weight="bold">남동향 후보 · 미확인</text>
+<text x="531" y="232" fill="#4d5d52" font-size="5.5">화살표의 시작점은 개략 위치. 정확한 창 위치 미확인.</text>
+</svg></section>
+</div>
+<div class="legend">
+<p class="red"><strong>빨간 실선: 기존 전망 코드의 78° 방향.</strong> 북쪽에서 시계방향 78도, 거의 동쪽입니다. 실제 거실 방위를 확인해서 넣은 값이 아닙니다.</p>
+<p class="blue"><strong>파란 점선: 현재 배치도에서 추정하는 남동향 후보.</strong> 오른쪽 위 날개의 거실 전면을 남동쪽으로 보는 가설이며, 창호 대조 전에는 확정할 수 없습니다.</p>
+</div>
+<p class="note">504호와 1004호는 같은 라인이라는 전제에서 수평 방향이 같습니다. 이번 화면은 방향 확인용이며 전망 모델의 방위값은 아직 변경하지 않았습니다.</p>
+<p class="note">출처: <a href="https://apt79.tistory.com/13532536">2015년 분양 자료 재게시본</a>. 원본 이미지는 수정하지 않고 주석만 별도 표시했습니다.</p>
+</main>
+</html>

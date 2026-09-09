@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#176957" />
+  <title>신촌푸르지오 | 집과 전망</title>
+</head>
+<body>
+  <header class="topbar"><div class="brand"><i data-lucide="scan-line"></i><strong>집과 전망</strong><span>신촌푸르지오</span></div><span class="pilot">시범 단지 · 2단지</span></header>
+  <main>
+    <aside class="sidebar">
+      <section class="search-section">
+        <p class="eyebrow">세대 조회</p><h1>신촌푸르지오 2단지</h1>
+        <form id="search-form">
+          <label for="address">주소 / 아파트명</label><input id="address" value="북아현로1길 50" autocomplete="off" required />
+          <div class="form-row"><div><label for="building">동</label><select id="building"></select></div><div><label for="unit">호</label><input id="unit" value="504" inputmode="numeric" autocomplete="off" required /></div></div>
+          <button class="primary" type="submit"><i data-lucide="search"></i>세대 조회</button>
+        </form>
+        <p id="lookup-error" class="error" role="alert" hidden></p>
+        <div class="examples"><span>시범 조회</span><button type="button" data-example="206,504">206동 504호</button><button type="button" data-example="206,1004">206동 1004호</button><button type="button" data-example="204,802">204동 802호</button></div>
+      </section>
+      <section class="unit-section" aria-live="polite">
+        <div class="section-heading"><p class="eyebrow">선택한 공간</p><span id="selection-kind">분양표 기준</span></div>
+        <h2 id="unit-title">204동 802호</h2>
+        <div class="facts"><div><span>타입</span><strong id="type-value">84E</strong></div><div><span>전용면적</span><strong id="area-value">84.9953 ㎡</strong></div></div>
+        <div class="status-line"><i data-lucide="file-check-2"></i><span id="match-status">분양표와 확장형 도면 연결</span></div>
+        <p class="data-note">현 세대의 확장 여부·좌우 반전·방위는 미확인</p>
+      </section>
+      <section class="plan-section"><div class="section-heading"><p class="eyebrow">확보 도면</p><span>8종</span></div><div id="plan-list" class="plan-list"></div></section>
+      <section class="source-section"><a href="https://apt79.tistory.com/13532557" target="_blank" rel="noreferrer">평면도 출처 <i data-lucide="external-link"></i></a><a href="/research/sinchon-prugio/README.md" target="_blank">수집 기록 <i data-lucide="file-text"></i></a><small>2015년 분양 자료 · 현재 준공도면 미확보</small></section>
+    </aside>
+    <section class="workspace">
+      <div class="workspace-heading"><div><p class="eyebrow">공간 뷰어</p><h2 id="viewer-title">84E · 확장형</h2></div><div class="tabs" role="tablist" aria-label="보기 방식"><button data-view="3d" role="tab" aria-selected="true"><i data-lucide="box"></i>3D 구조</button><button data-view="plan" role="tab" aria-selected="false"><i data-lucide="map"></i>평면도</button><button data-view="site" role="tab" aria-selected="false"><i data-lucide="building-2"></i>단지 배치</button><button data-view="outlook" role="tab" aria-selected="false"><i data-lucide="panels-top-left"></i>전망</button></div></div>
+      <div id="scene-panel" class="scene-panel">
+        <div id="canvas-host"></div>
+        <div class="scene-label"><span class="status-dot"></span><span>도면 기반 추정 모델</span></div>
+        <div class="scene-tools"><button id="reset-camera" class="icon-button" title="전체 구조로 돌아가기" aria-label="전체 구조로 돌아가기"><i data-lucide="rotate-ccw"></i></button><button id="zoom-in" class="icon-button" title="확대" aria-label="확대"><i data-lucide="plus"></i></button><button id="zoom-out" class="icon-button" title="축소" aria-label="축소"><i data-lucide="minus"></i></button><button id="capture" class="icon-button" title="현재 화면 저장" aria-label="현재 화면 저장"><i data-lucide="camera"></i></button></div>
+        <div class="scene-bottom"><div id="rooms" class="room-buttons"></div><label class="cut-toggle"><input id="cut-walls" type="checkbox" checked />벽 낮추기</label></div>
+        <div id="scene-error" class="empty-state" hidden><i data-lucide="box"></i><h3>3D 모델 준비 중</h3><p>이 타입은 원본 평면도를 확인할 수 있습니다.</p><button id="open-plan">평면도 열기</button></div>
+      </div>
+      <div id="image-panel" class="image-panel" hidden><a id="image-link" target="_blank"><img id="reference-image" alt="" /></a></div>
+      <div id="outlook-panel" class="outlook-panel" hidden>
+        <div class="outlook-heading"><div><strong>206동 · 4호 라인 비교</strong><span id="outlook-type"></span></div><span class="estimate-tag">남동향 후보 · 추정 전망</span></div>
+        <div id="outlook-unavailable" hidden>이 세대의 전망 위치는 아직 연결되지 않았습니다. <button id="open-comparison">206동 비교 열기</button></div>
+        <div id="comparison-content">
+          <div class="compare-toolbar"><label>A <select id="floor-a" aria-label="A 층"></select></label><label>B <select id="floor-b" aria-label="B 층"></select></label><strong id="height-delta"></strong><button id="outlook-reset" class="icon-button" title="전망 시점 초기화" aria-label="전망 시점 초기화"><i data-lucide="rotate-ccw"></i></button></div>
+          <div class="landmark-toolbar"><label for="landmark-select">랜드마크</label><select id="landmark-select" aria-label="랜드마크"></select><button id="landmark-focus" class="icon-button" title="선택한 랜드마크 방향" aria-label="선택한 랜드마크 방향"><i data-lucide="crosshair"></i></button><label class="landmark-toggle"><input type="checkbox" id="landmarks-visible" checked/>표시</label><a id="landmark-source" target="_blank" rel="noreferrer"></a></div>
+          <div id="outlook-host"><div class="view-label label-a"><strong id="label-a">504호</strong><span id="elevation-a"></span></div><div class="view-label label-b"><strong id="label-b">1004호</strong><span id="elevation-b"></span></div><span id="landmark-pin-0" class="landmark-pin" hidden></span><span id="landmark-pin-1" class="landmark-pin" hidden></span><div id="outlook-loading" role="status">지형과 건물 불러오는 중...</div></div>
+          <div id="landmark-status" class="landmark-status" aria-live="polite"></div>
+          <div class="environment-toolbar"><label><input id="roads-visible" type="checkbox" checked />도로 면</label><label><input id="facades-visible" type="checkbox" checked />추정 외관</label><label><input id="building-labels-visible" type="checkbox" checked />건물 이름</label><label class="eye-height-label" for="eye-height">눈높이 (m)<input id="eye-height" type="number" min="0.8" max="2" step="0.05" value="1.5" /></label><a href="https://kbland.kr/se/otd/286957" target="_blank" rel="noreferrer">외관 참고 사진 · 2023.12</a><span>도로 폭·창문 배열 추정 / 교량·터널 미재현</span></div>
+          <div id="observer-status" class="observer-status"></div>
+          <details class="model-review" open><summary>건물·도로 대조 <span>OSM 명칭 · 실제 일치 미검증</span></summary>
+            <div class="review-actions"><a id="review-earth" target="_blank" rel="noreferrer">Google Earth</a><button id="review-kml" title="현재 두 층 시점과 주변 OSM 외곽 KML 다운로드"><i data-lucide="download"></i>KML 내보내기</button><span>외부 대조용 · 실사 3D API 미연결</span></div>
+            <div class="review-layout"><svg id="review-map" viewBox="-250 -250 500 500" role="img" aria-label="주변 500m 건물 외곽과 도로 대조 지도"></svg><div class="review-info">
+              <strong id="review-building-name"></strong><p id="review-building-facts"></p><div class="review-links"><a id="review-building-source" target="_blank" rel="noreferrer">OSM 건물 원본</a><a id="review-building-map" target="_blank" rel="noreferrer">위성지도</a><button id="review-building-focus" class="icon-button" title="선택 건물 방향" aria-label="선택 건물 방향"><i data-lucide="crosshair"></i></button></div>
+              <label for="review-road">주변 도로 구간</label><div class="review-road-control"><select id="review-road"></select><button id="review-road-focus" class="icon-button" title="선택 도로 쪽으로 내려다보기" aria-label="선택 도로 쪽으로 내려다보기"><i data-lucide="scan-eye"></i></button></div><p id="review-road-facts"></p><p id="review-road-visibility"></p><div class="review-links"><a id="review-road-source" target="_blank" rel="noreferrer">OSM 도로 원본</a><a id="review-road-map" target="_blank" rel="noreferrer">도로 위성지도</a><a id="review-street" target="_blank" rel="noreferrer">Street View</a></div><p class="review-caveat">Street View는 가까운 지상 촬영점으로 이동합니다. 세대의 층·시점과 다르며 해당 구간 영상 제공 여부는 미확인입니다.</p>
+            </div></div>
+          </details>
+          <div class="bearing-row"><label for="bearing">방위 <output id="bearing-value"></output></label><input id="bearing" type="range" min="0" max="359" value="123" /><label for="view-fov">시야각</label><input id="view-fov" type="range" min="35" max="95" value="65" /></div>
+          <details class="direction-locator" open><summary>시점 위치 / 방향 <span>남동쪽 전면 후보</span></summary>
+            <div class="locator-layout"><div class="locator-source"><svg viewBox="520 102 150 100" role="img" aria-label="원본 배치도의 206동 4호 라인 추정 위치"><image href="/research/sinchon-prugio/images/site-and-units.jpg" width="764" height="1075"/><circle cx="584" cy="134" r="3" fill="#176957" stroke="white" stroke-width="1"/><path d="M584 134 L619 174" stroke="#176957" stroke-width="1.5"/><path d="M619 174 L611 170 L617 166 Z" fill="#176957"/></svg><span>분양 배치도 · 4호 라인 판독 위치</span></div>
+            <div class="locator-geographic"><svg id="locator-map" viewBox="-65 -55 150 110" role="img" aria-label="지도 건물 외곽과 현재 카메라 위치 및 시선"><defs><marker id="current-arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#176957"/></marker></defs><g id="locator-buildings"></g><path id="locator-old" fill="none" stroke="#bc625b" stroke-width="1" stroke-dasharray="2 2"/><path id="locator-cone" fill="#17695720"/><path id="locator-arrow" fill="none" stroke="#176957" stroke-width="1.5" marker-end="url(#current-arrowhead)"/><circle id="locator-point" r="1.8" fill="#176957" stroke="white" stroke-width=".5"/><text x="-8" y="-22" font-size="5" fill="#176957">206</text><path d="M-54 -36 V-47 l-2 4 m2 -4 l2 4" stroke="#263c32" stroke-width="1" fill="none"/><text x="-56" y="-49" font-size="5">N</text></svg><span>지도 좌표 · 현재 <b id="locator-bearing"></b> / 붉은 점선: 이전 방향</span></div></div>
+            <p id="window-warning" class="error" hidden>보정한 시점이 206동 건물 내부에 있습니다. 창 위치 보정을 확인해 주세요.</p>
+          </details>
+          <details class="calibration"><summary>위치·높이 보정 <span>창 위치 및 방위 미확인</span></summary><div class="calibration-grid"><label>층고 (m)<input id="floor-height" type="number" min="2" max="4" step="0.1" value="2.9" /></label><label>지반 보정 (m)<input id="ground-offset" type="number" min="-30" max="30" step="0.5" value="0" /></label><label>창 동쪽 이동 (m)<input id="window-east" type="number" min="-50" max="50" step="0.5" value="0" /></label><label>창 북쪽 이동 (m)<input id="window-north" type="number" min="-50" max="50" step="0.5" value="0" /></label></div><label class="estimate-toggle"><input id="estimated-buildings" type="checkbox" checked />높이 가정 건물 포함</label></details>
+          <div class="outlook-evidence">창 위치·방위·층고는 가정값. 실제 촬영 전망이 아닙니다.<br />건물 외곽: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap 기여자 · ODbL</a> / 지형: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noreferrer">Mapzen Terrain · 원자료 출처</a><br /><span id="dataset-stats"></span></div>
+        </div>
+      </div>
+      <footer class="viewer-footer"><span id="view-caption">벽체·창호 위치는 이미지 판독 초안, 길이·높이는 추정치</span><a id="download-image" href="/research/sinchon-prugio/images/84E.jpg" download><i data-lucide="download"></i>원본 도면</a></footer>
+    </section>
+  </main>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
