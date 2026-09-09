@@ -3,5 +3,7 @@ dist/
 .tools/
 .vite/
 *.log
+.env*
+!.env.example
 verification/*
 !verification/direction-check.html

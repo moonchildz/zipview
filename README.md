@@ -41,6 +41,9 @@ npm.cmd run dev
 
 ## 다음 데이터 단계
 
+Google/Kakao 조회 가능성 및 실제 인증 오류 기록: [지도 제공자 검토](research/sinchon-prugio/map-provider-review.md).
+로컬 `.env.local`에 키를 설정하면 `npm run probe:maps -- --provider google` 또는 `--provider kakao`로 210동 후보를 1회 조회한다. 키가 없으면 요청하지 않는다. 조회는 진단용이며 결과를 저장하거나 기존 3D 모델에 반영하지 않는다.
+
 1. 원본 도면/준공 자료로 동호 매핑 범위를 확대하고 치수를 보정한다.
 2. 세대별 반전과 회전을 확인하고 내부 좌표를 지리 좌표에 연결한다.
 3. 주변 건물/지형 데이터와 실제 세대 촬영 사진으로 전망을 대조한다.
