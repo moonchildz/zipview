@@ -17,3 +17,7 @@ research/gyeonghuigung-xi/images/site-r1472-042.jpg
 research/gyeonghuigung-xi/images/site-r1472-043.jpg
 research/gyeonghuigung-xi/recruitment-etoday-20141120.pdf
 research/gyeonghuigung-xi/site-post.html
+
+# Reproducible regional downloads, local database, and reference-only drawings.
+research/seoul/raw/
+research/seoul/generated/

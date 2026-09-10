@@ -1,4 +1,5 @@
 import {inferPlanReflection} from './plan-reflection.js';
+import {inferPlanRegistration} from './plan-registration.js';
 
 // Original raster coordinates, X right / Y down. Tolerances are conservative
 // reading margins, not statistical confidence or cadastral accuracy.
@@ -21,7 +22,10 @@ export const XI_ORIENTATION_ANCHORS={
 };
 
 export function xiOrientationDecision(building,line) {
-  return inferPlanReflection({plan:XI_PLAN_ENTRANCE,placement:XI_ORIENTATION_ANCHORS[building.id]?.[line]});
+  const candidate=inferPlanReflection({plan:XI_PLAN_ENTRANCE,placement:XI_ORIENTATION_ANCHORS[building.id]?.[line]});
+  // The existing topology is an exploratory candidate, not independent registration.
+  const registration=inferPlanRegistration();
+  return {...candidate,automaticPlacement:registration.automaticPlacement,registration};
 }
 
 export function xiLineOrientations(building) {

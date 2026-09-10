@@ -1,0 +1,15 @@
+{
+  "unitKey": null,
+  "sourceDocument": null,
+  "targetDocument": null,
+  "unitLinkStatus": "missing",
+  "sourceAxis": "x-right-y-down",
+  "targetAxis": "x-right-y-down",
+  "tolerance": null,
+  "pairs": [
+    {"id":"entrance","kind":"door","source":null,"target":null,"role":"fit"},
+    {"id":"kitchen-opening","kind":"opening","source":null,"target":null,"role":"fit"},
+    {"id":"bedroom-exterior-corner","kind":"corner","source":null,"target":null,"role":"fit"},
+    {"id":"balcony-end","kind":"balcony","source":null,"target":null,"role":"check"}
+  ]
+}

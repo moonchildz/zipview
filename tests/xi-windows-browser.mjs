@@ -28,6 +28,9 @@ try {
     assert.equal(await host.getAttribute('data-orientation-evidence'),'inferred');
     assert.equal(await host.getAttribute('data-orientation-matches-evidence'),'true');
     assert.equal(await host.getAttribute('data-orientation-method'),'entrance-core-topology');
+    assert.equal(await host.getAttribute('data-orientation-automatic-placement'),'false');
+    assert.equal(await host.getAttribute('data-orientation-registration'),'unknown');
+    assert.match(await page.locator('#xi-orientation-status').textContent(),/반전 검증 보류/);
     assert.match(await page.locator('#xi-orientation-basis').textContent(),/원본 불일치 \/ 반전 일치/);
     assert.deepEqual(JSON.parse(await host.getAttribute('data-complex-facades')),{buildings:14,partialPlan:2,referencePattern:12,verified:0});
     assert.equal(await page.locator('#xi-opening-plan').getAttribute('data-north-up'),'true');
@@ -133,7 +136,7 @@ try {
     await page.evaluate(()=>scrollTo(0,0));
     await page.screenshot({path:`verification/xi-windows-page-${width}.png`,fullPage:true});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no horizontal page overflow');
-    const overflow=await page.locator('.xi-window-picker button,.xi-window-facts,.view-label').evaluateAll(els=>els.filter(e=>e.clientWidth&&e.scrollWidth>e.clientWidth+2).map(e=>e.textContent));
+    const overflow=await page.locator('.xi-window-picker button,.xi-window-facts,.view-label,.xi-orientation-status').evaluateAll(els=>els.filter(e=>e.clientWidth&&e.scrollWidth>e.clientWidth+2).map(e=>e.textContent));
     assert.deepEqual(overflow,[]);
     assert.deepEqual(errors,[]);assert.equal(imagery.length,5);
     assert.ok(imagery.every(url=>url.searchParams.get('zoom')==='15'));

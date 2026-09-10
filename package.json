@@ -8,11 +8,21 @@
     "build": "vite build",
     "test": "node --test tests/*.test.mjs",
     "probe:maps": "node scripts/probe-maps.mjs",
-    "verify:browser": "node tests/browser.mjs"
+    "verify:browser": "node tests/browser.mjs",
+    "collect:seoul": "node scripts/collect-seoul.mjs",
+    "collect:seoul-terrain": "node scripts/collect-seoul-terrain.mjs",
+    "build:seoul": "node --max-old-space-size=8192 scripts/build-seoul.mjs",
+    "query:seoul": "node scripts/query-seoul.mjs",
+    "verify:seoul": "node scripts/verify-seoul.mjs",
+    "register:plan": "node scripts/register-plan.mjs"
   },
   "dependencies": {
     "lucide": "^0.468.0",
+    "osmtogeojson": "3.0.0-beta.5",
     "three": "^0.180.0"
+  },
+  "overrides": {
+    "osmtogeojson": {"@xmldom/xmldom": "0.9.12"}
   },
   "devDependencies": {
     "cheerio": "^1.2.0",

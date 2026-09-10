@@ -120,9 +120,10 @@ export function mountXiWindowPicker(outlook) {
   const refresh=()=>{
     candidates=xiOpeningCandidates(outlook.target,outlook.data.center,{line,mirrored});
     const decision=xiOrientationDecision(outlook.target,line),matches=decision.mirrored===mirrored;
-    $('#xi-orientation-status').textContent=`${mirrored?'좌우 반전':'원본 평면'} · ${matches?'현관–코어 대조 추정':'자료 판정과 다른 수동 후보'}`;
+    $('#xi-orientation-status').textContent=`${mirrored?'좌우 반전':'원본 평면'} · ${matches?'현관–코어 대조 추정':'자료 판정과 다른 수동 후보'} · 반전 검증 보류`;
     $('#xi-orientation-basis').textContent=`${line}라인: 원본 ${decision.candidates.find(c=>!c.mirrored)?.entranceTowardCore?'일치':'불일치'} / 반전 ${decision.candidates.find(c=>c.mirrored)?.entranceTowardCore?'일치':'불일치'}. 기준: 현관의 세대 내 좌우 위치와 공용 코어가 있는 쪽. 북쪽 기준 회전은 별도 적용합니다.`;
-    Object.assign(outlook.host.dataset,{orientationEvidence:decision.status,orientationMatchesEvidence:String(matches),orientationMethod:decision.reason});
+    Object.assign(outlook.host.dataset,{orientationEvidence:decision.status,orientationMatchesEvidence:String(matches),orientationMethod:decision.reason,
+      orientationAutomaticPlacement:String(decision.automaticPlacement),orientationRegistration:decision.registration.status});
     $('#xi-mirror').setAttribute('aria-pressed',String(mirrored));
     updateFacade(orientations);
     choose(selected);

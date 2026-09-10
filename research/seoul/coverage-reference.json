@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-09-10",
+  "publisher": "국토교통부",
+  "title": "2026년 공동주택 공시가격(안) 열람",
+  "publishedAt": "2026-03-17",
+  "referenceDate": "2026-01-01",
+  "publicationStage": "preliminary-price-disclosure; not September live inventory",
+  "sourcePage": "https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95091792",
+  "sourcePdf": "https://www.molit.go.kr/LCMS/DWN.jsp?fold=koreaNews/mobile/file&fileName=260318%28%EC%A1%B0%EA%B0%84%29+%E2%80%9826%EB%85%84+%EA%B3%B5%EB%8F%99%EC%A3%BC%ED%83%9D+%EA%B3%B5%EC%8B%9C%EA%B0%80%EA%B2%A9%28%EC%95%88%29+%EC%97%B4%EB%9E%8C%28%EB%B6%80%EB%8F%99%EC%82%B0%ED%8F%89%EA%B0%80%EA%B3%BC%29.pdf",
+  "pdfSha256": "1b54d5c0559b34868008ebf5fd9d0fb39cfca237b415fe99b8167155e4628400",
+  "pdfPageOneBased": 7,
+  "printedAppendixPage": 3,
+  "table": "다. 시·도별 공동주택 유형별 분포 현황",
+  "row": "서울",
+  "apartment": {"complexes":9528,"buildings":25678,"units":1837006},
+  "allCollectiveHousing": {"complexes":106143,"buildings":128627,"units":2782147},
+  "verification": "Official PDF downloaded, text extracted and page 7 visually inspected. Only reference counts transcribed."
+}

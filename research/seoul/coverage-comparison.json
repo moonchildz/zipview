@@ -1,0 +1,31 @@
+{
+  "calculatedAt": "2026-09-10T09:54:36.056Z",
+  "numerator": 2888,
+  "numeratorUnit": "Seoul OA-15818 records, mixed housing categories",
+  "denominator": 9528,
+  "denominatorUnit": "Apartment complexes in MOLIT preliminary price-disclosure inventory",
+  "denominatorReferenceDate": "2026-01-01",
+  "ratioPercent": 30.310663308144413,
+  "metric": "aggregate-count-comparison-only",
+  "exactMatchedCoveragePercent": null,
+  "kinds": {
+    "아파트": 2533,
+    "주상복합": 277,
+    "연립주택": 11,
+    "미분류": 42,
+    "도시형 생활주택(주상복합)": 16,
+    "다세대": 1,
+    "도시형 생활주택(아파트)": 8
+  },
+  "caveats": [
+    "Different reference dates",
+    "Different housing classifications",
+    "Complex grouping and source IDs not crossmatched",
+    "Public-price inventory is not certified as all Seoul housing",
+    "Not floorplan or window-view readiness"
+  ],
+  "sources": [
+    "https://data.seoul.go.kr/dataList/OA-15818/A/1/datasetView.do",
+    "https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95091792"
+  ]
+}
