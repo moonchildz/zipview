@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite';
 import { readFileSync } from 'node:fs';
+import { satellitePlugin } from './scripts/imagery-server.mjs';
 
 export default defineConfig({
   server: {
     watch: { ignored: ['**/verification/**', '**/.tools/**'] },
     fs: { deny: ['.env', '.env.*', '*.{crt,pem,key}', '**/.git/**'] },
   },
-  plugins: [{
+  plugins: [satellitePlugin(), {
     name: 'research-assets',
     generateBundle() {
       for (const name of ['59D', '84A', '84B', '84C', '84D', '84E', '109A', '109B', 'site-and-units', 'site-perspective']) {
@@ -19,7 +20,7 @@ export default defineConfig({
       this.emitFile({ type: 'asset', fileName: sceneFile, source: readFileSync(sceneFile) });
       const correctionFile = 'research/sinchon-prugio/outlook/mapinfo-correction.json';
       this.emitFile({ type: 'asset', fileName: correctionFile, source: readFileSync(correctionFile) });
-      for (const name of ['scene.json', 'README.md']) {
+      for (const name of ['scene.json', 'README.md', 'unit-layout-research.md']) {
         const fileName = `research/gyeonghuigung-xi/${name}`;
         this.emitFile({type:'asset',fileName,source:readFileSync(fileName)});
       }

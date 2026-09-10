@@ -1,0 +1,58 @@
+import {chromium} from 'playwright';
+import {PNG} from 'pngjs';
+import {mkdir,writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+
+// Explicit opt-in: this script consumes Google Map Tiles quota. Never run in npm test.
+const base=process.env.TEST_BASE_URL || 'http://127.0.0.1:5174';
+const site=process.env.TEST_SITE === 'sinchon' ? 'sinchon' : 'xi';
+const browser=await chromium.launch({channel:'chrome',headless:true});
+await mkdir('verification',{recursive:true});
+try {
+  const page=await browser.newPage({viewport:{width:1440,height:1100}});
+  const errors=[], responses=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',m=>{if(m.type()==='error' && /THREE|Shader|WebGL/.test(m.text()))errors.push(m.text());});
+  page.on('response',r=>{if(r.url().includes('/api/imagery/'))responses.push({path:new URL(r.url()).pathname,status:r.status()});});
+  await page.goto(`${base}/${site==='xi'?'?site=xi':''}`);
+  const host=page.locator('#outlook-host');
+  await page.waitForSelector('#outlook-host[data-ready="true"]');
+  const heights=await host.getAttribute('data-camera-heights');
+  await page.waitForFunction(()=>['visible','error'].includes(document.querySelector('#outlook-host').dataset.imagery),{},{timeout:180000});
+  const status=await page.locator('#imagery-status').textContent();
+  assert.equal(await host.getAttribute('data-imagery'),'visible',status);
+  assert.equal(await host.getAttribute('data-camera-heights'),heights);
+  assert.equal(await host.getAttribute('data-imagery-zoom'),'15');
+  assert.equal(await page.locator('#imagery-visible').isChecked(),true);
+  await page.locator('#imagery-visible').uncheck();
+  await page.locator('#roads-visible').uncheck();
+  const before=PNG.sync.read(await page.locator('#outlook-host canvas').screenshot());
+  await page.locator('#imagery-visible').check();
+  const after=PNG.sync.read(await page.locator('#outlook-host canvas').screenshot());
+  let changed=0;
+  for(let i=0;i<after.data.length;i+=4)if(Math.abs(after.data[i]-before.data[i])+Math.abs(after.data[i+1]-before.data[i+1])+Math.abs(after.data[i+2]-before.data[i+2])>30)changed++;
+  assert.ok(changed>1000);
+  const attribution=await page.locator('#imagery-credits').textContent();
+  assert.ok(attribution.includes('Google Maps')&&!attribution.includes('TEST FIXTURE'));
+  await host.scrollIntoViewIfNeeded();
+  await page.screenshot({path:`verification/imagery-live-${site}-desktop.png`,fullPage:true});
+  const box=await host.boundingBox();
+  await page.mouse.move(box.x+box.width*.8,box.y+box.height*.6);
+  await page.mouse.down();await page.mouse.move(box.x+box.width*.8,box.y+box.height*.6-100);await page.mouse.up();
+  await page.screenshot({path:`verification/imagery-live-${site}-ground.png`,fullPage:true});
+  await page.setViewportSize({width:390,height:1000});
+  await host.scrollIntoViewIfNeeded();
+  await page.screenshot({path:`verification/imagery-live-${site}-mobile.png`,fullPage:true});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  const count=responses.length;
+  await page.locator('#imagery-visible').uncheck();await page.locator('#imagery-visible').check();
+  assert.equal(responses.length,count);
+  assert.deepEqual(errors,[]);
+  const zoom=Number(await host.getAttribute('data-imagery-zoom'));
+  assert.equal(responses.filter(r=>r.path.includes('/tile/')&&r.status===200).length,4);
+  assert.equal(responses.length,5);
+  assert.ok(responses.every(r=>r.status===200));
+  const result={site,zoom,changed,heights,attribution,requests:responses.length,errors,liveImageryVerified:true,geographicAccuracyVerified:false};
+  await writeFile(`verification/imagery-live-${site}.json`,JSON.stringify(result,null,2));
+  console.log(JSON.stringify(result,null,2));
+} finally {await browser.close();}

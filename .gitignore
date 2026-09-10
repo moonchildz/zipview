@@ -8,3 +8,12 @@ dist/
 *.key
 verification/*
 !verification/direction-check.html
+
+# Research-only third-party originals; publish source links and findings instead.
+research/gyeonghuigung-xi/images/site-blueprint-reference.webp
+research/gyeonghuigung-xi/images/site-jmd0104-original.jpg
+research/gyeonghuigung-xi/images/site-jmd0104.jpg
+research/gyeonghuigung-xi/images/site-r1472-042.jpg
+research/gyeonghuigung-xi/images/site-r1472-043.jpg
+research/gyeonghuigung-xi/recruitment-etoday-20141120.pdf
+research/gyeonghuigung-xi/site-post.html

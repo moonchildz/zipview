@@ -6,6 +6,8 @@ import { buildStreets } from './streets.js';
 import { buildFacades } from './facades.js';
 import { ModelInspector } from './model-inspector.js';
 import { terrainGeometries } from './terrain-mesh.js';
+import { bindGroundImagery } from './ground-imagery.js';
+import './ground-imagery.css';
 
 export class OutlookScene {
   constructor(host, onChange, options = {}) {
@@ -54,6 +56,7 @@ export class OutlookScene {
     const response = await fetch(this.options.sceneUrl ?? '/research/sinchon-prugio/outlook/scene.json');
     if (!response.ok) throw new Error('전망 데이터 파일을 불러오지 못했습니다.');
     this.data = await response.json();
+    this.options.prepareData?.(this.data);
     const original = new URLSearchParams(location.search).get('terrain') === 'original';
     const correctionResponse = original || this.options.correction === false ? null : await fetch('/research/sinchon-prugio/outlook/mapinfo-correction.json');
     if (correctionResponse && !correctionResponse.ok) throw new Error('수치지도 보정 데이터를 불러오지 못했습니다.');
@@ -88,8 +91,9 @@ export class OutlookScene {
     for (const building of this.data.buildings) {
       if (this.data.landmarks.some(l => l.id === `way/${building.id}`)) continue;
       if (building.points.length < 4) continue;
-      const shape = new THREE.Shape(building.points.map(([x, z]) => new THREE.Vector2(x, -z)));
-      const geometry = new THREE.ExtrudeGeometry(shape, { depth: building.height, bevelEnabled: false });
+      for (const volume of building.parts ?? [building]) {
+      const shape = new THREE.Shape(volume.points.map(([x, z]) => new THREE.Vector2(x, -z)));
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: volume.height, bevelEnabled: false });
       geometry.rotateX(-Math.PI / 2);
       geometry.translate(0, building.base, 0);
       const pickable = new THREE.Mesh(geometry,pickMaterial);
@@ -100,8 +104,9 @@ export class OutlookScene {
       groups.get(key).push(geometry);
       if (building.points.some(([x, z]) => Math.hypot(x, z) < 450)) {
         if (!facadeGroups.has(key)) facadeGroups.set(key, []);
-        facadeGroups.get(key).push(buildFacades(building));
+        facadeGroups.get(key).push(buildFacades(volume));
         facadeCount++;
+      }
       }
     }
     this.estimated = null;
@@ -142,6 +147,7 @@ export class OutlookScene {
     this.scene.updateMatrixWorld(true);
     this.update();
     this.inspector = new ModelInspector(this);
+    bindGroundImagery(this);
     this.render();
   }
 

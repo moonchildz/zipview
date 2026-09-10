@@ -3,6 +3,7 @@ import { PNG } from 'pngjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { load } from 'cheerio';
+import {mockGroundImagery} from './imagery-fixture.mjs';
 
 const output = 'verification';
 await mkdir(output, { recursive: true });
@@ -12,9 +13,10 @@ const results = [];
 try {
   for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
     const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
+    await mockGroundImagery(page);
     page.on('pageerror', e => errors.push(e.message));
     page.on('response', r => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`); });
-    await page.goto('http://127.0.0.1:5173', { waitUntil: 'networkidle' });
+    await page.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:5174', { waitUntil: 'networkidle' });
     assert.equal(await page.locator('#unit-title').textContent(), '206동 504호');
     await page.waitForSelector('#outlook-host[data-ready="true"]');
     const outlook = page.locator('#outlook-host');

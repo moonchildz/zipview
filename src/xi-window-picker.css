@@ -1,0 +1,45 @@
+.xi-window-stage{display:grid;grid-template-columns:300px minmax(0,1fr);border-block:1px solid #dce4df;align-items:start}
+.xi-window-stage.xi-view-only{grid-template-columns:minmax(0,1fr)}
+.xi-window-picker{border-right:1px solid #dce4df;min-width:0;background:#fff;padding:14px}
+.xi-picker-heading{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13px}
+.xi-picker-heading>span{font-size:10px;color:#8b642c}
+.xi-picker-controls{display:flex;align-items:end;gap:8px;margin-top:12px}
+.xi-picker-controls label{flex:1;margin:0;font-size:10px}
+.xi-picker-controls select{height:32px;font-size:11px;margin-top:4px}
+.xi-picker-controls button{width:32px;height:32px;flex-shrink:0}
+.xi-picker-controls button[aria-pressed=true]{background:#edf6f1;border-color:#176957}
+.xi-plan-surface{width:100%;aspect-ratio:560/545;margin:10px 0;overflow:hidden;background:white}
+.xi-plan-surface>svg{display:block;width:100%;height:100%}
+.xi-compass text{font-size:25px;fill:#52695e;text-anchor:middle;font-weight:600}
+.xi-opening-marker{cursor:pointer;outline:none}
+.xi-opening-glass{stroke:#198caa;stroke-width:9}
+.xi-opening-dot{fill:#fff;stroke:#177860;stroke-width:2.5}
+.xi-opening-marker text{fill:#176957;font-weight:700;pointer-events:none}
+.xi-opening-marker[aria-pressed=true] .xi-opening-dot{fill:#176957}
+.xi-opening-marker[aria-pressed=true] text{fill:white}
+.xi-opening-marker[aria-pressed=true] .xi-opening-glass{stroke:#bd652b}
+.xi-opening-marker:focus-visible .xi-opening-dot,.xi-opening-marker:hover .xi-opening-dot{stroke:#bd652b;stroke-width:5}
+#xi-unit-map [role=button]{cursor:pointer}
+#xi-unit-map [role=button]:focus-visible{stroke:#bd652b;stroke-width:1;outline:none}
+.xi-opening-list{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.xi-opening-list button{min-height:32px;display:flex;align-items:center;gap:5px;padding:5px 6px;font-size:10px;text-align:left;line-height:1.4}
+.xi-opening-list button>span{font-size:10px;color:#628375;width:14px;flex-shrink:0;text-align:center}
+.xi-opening-list button[aria-pressed=true]{border-color:#176957;background:#edf6f1;color:#176957}
+.xi-window-facts{display:grid;gap:5px;font-size:12px;margin-top:14px;min-height:36px}
+.xi-window-facts span{font-size:10px;color:#62736a}
+.xi-accuracy{display:block;font-size:10px;color:#976728;margin-top:10px}
+.xi-orientation-status{display:block;font-size:10px;color:#6c7c74;margin-top:5px}
+.xi-evidence{font-size:10px;color:#6c7c74;margin-top:10px;line-height:1.65}
+.xi-evidence summary{cursor:pointer}
+.xi-evidence p{font-size:10px;line-height:1.7;margin:8px 0!important;color:#6c7c74}
+.xi-window-stage #outlook-host{height:560px}
+.xi-window-stage .view-label{left:8px;top:8px;padding:7px;border-left-width:2px;max-width:calc(50% - 16px)}
+.xi-window-stage .view-label strong{font-size:11px;overflow-wrap:anywhere}
+.xi-window-stage .view-label span{font-size:9px}
+.xi-window-stage .label-b{left:calc(50% + 8px)}
+.xi-window-stage .stacked .view-label{max-width:calc(100% - 16px)}
+.xi-window-stage .stacked .label-b{left:8px;top:calc(50% + 8px)}
+body.xi-app .outlook-panel>.outlook-heading{display:flex}
+@media(max-width:1150px){.xi-window-stage{grid-template-columns:250px minmax(0,1fr)}.xi-window-picker{padding:10px}}
+@media(max-width:900px){.xi-window-stage{grid-template-columns:minmax(0,1fr)}.xi-window-picker{border-right:0;border-bottom:1px solid #dce4df;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:12px}.xi-picker-heading,.xi-picker-controls{grid-column:1/-1}.xi-plan-surface{grid-column:1;grid-row:3/8;align-self:start;min-height:200px}.xi-opening-list{grid-column:2;grid-template-columns:1fr;margin-top:10px}.xi-window-facts,.xi-accuracy,.xi-evidence,.xi-orientation-status{grid-column:2}.xi-window-stage #outlook-host{height:540px}.xi-evidence[open]{grid-column:1/-1}}
+@media(max-width:430px){.xi-window-picker{grid-template-columns:minmax(0,1fr);padding:14px}.xi-plan-surface{grid-column:1;grid-row:auto;max-width:330px;justify-self:center}.xi-opening-list{grid-column:1;grid-template-columns:1fr 1fr}.xi-window-facts,.xi-accuracy,.xi-evidence,.xi-orientation-status{grid-column:1}.xi-picker-heading>span{font-size:10px}}

@@ -115,14 +115,19 @@ export class ModelInspector {
     $('#review-building-facts').textContent = `OSM #${building.id} · 높이 ${building.height}m (${building.heightSource === 'osm-height' ? '지도 높이 태그' : building.heightSource === 'assumed' ? '용도별 가정' : '층수 환산'}) · ${building.nameSource === 'missing' ? '이름 자료 없음' : building.nameSource === 'osm-name-and-site-containment' ? '단지명은 부지 포함으로 추정' : '이름은 지도 태그'}`;
     if (building.baseSource) $('#review-building-facts').textContent += ` · 지반 ${building.base.toFixed(1)}m (수치지도 보간, 1층 표고 미검증)`;
     if (building.geometrySource) $('#review-building-facts').textContent += ' · 외곽선/층수: 2025 수치지도, 층고 2.9m 가정';
+    if (building.facadeEvidence) $('#review-building-facts').textContent += ` · 창 외관: ${building.facadeEvidence.description}`;
     $('#review-building-source').href = building.source;
     const [x,z] = centerPoint(building.points), geo = geographicPoint(x,z,o.data.center), links = mapLinks(geo.lon,geo.lat,o.state.bearing);
     $('#review-building-map').href = links.satellite;
     $('#review-earth').href = links.earth;
-    if (this.outline) { o.scene.remove(this.outline); this.outline.geometry.dispose(); this.outline.material.dispose(); }
-    const source = o.pickables.find(m => m.userData.building.id === building.id);
-    if (source) {
-      this.outline = new THREE.LineSegments(new THREE.EdgesGeometry(source.geometry),new THREE.LineBasicMaterial({color:'#ed952e'}));
+    if (this.outline) {
+      o.scene.remove(this.outline);
+      this.outline.traverse(child=>{child.geometry?.dispose();child.material?.dispose();});
+    }
+    const sources = o.pickables.filter(m => m.userData.building.id === building.id);
+    if (sources.length) {
+      this.outline = new THREE.Group();
+      for(const source of sources)this.outline.add(new THREE.LineSegments(new THREE.EdgesGeometry(source.geometry),new THREE.LineBasicMaterial({color:'#ed952e'})));
       o.scene.add(this.outline);
     }
     document.querySelectorAll('#review-map [data-building-id]').forEach(el => el.classList.toggle('selected',Number(el.dataset.buildingId)===building.id));
