@@ -23,6 +23,7 @@ try {
     const host=page.locator('#outlook-host');
     await page.waitForSelector('#outlook-host[data-opening-id="living"]');
     await page.waitForSelector('#outlook-host[data-imagery="visible"]');
+    await page.click('.tabs [data-view="plan"]');
     assert.equal(await host.getAttribute('data-layout-model'),'18f-wing-hypothesis');
     assert.equal(await host.getAttribute('data-mirrored'),'true');
     assert.equal(await host.getAttribute('data-orientation-evidence'),'inferred');

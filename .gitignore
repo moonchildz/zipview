@@ -21,3 +21,7 @@ research/gyeonghuigung-xi/site-post.html
 # Reproducible regional downloads, local database, and reference-only drawings.
 research/seoul/raw/
 research/seoul/generated/
+research/linkage/generated/
+research/linkage/cache/
+research/linkage/providers/
+research/linkage/downloads/

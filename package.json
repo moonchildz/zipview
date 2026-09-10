@@ -4,6 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/build-linkage.mjs",
+    "prebuild": "node scripts/build-linkage.mjs",
+    "build:linkage": "node scripts/build-linkage.mjs",
+    "collect:addresses": "node scripts/address-pipeline.mjs",
+    "pipeline:addresses": "node scripts/run-address-pipeline.mjs",
+    "query:linkage": "node scripts/query-linkage.mjs",
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "test": "node --test tests/*.test.mjs",
@@ -14,7 +20,8 @@
     "build:seoul": "node --max-old-space-size=8192 scripts/build-seoul.mjs",
     "query:seoul": "node scripts/query-seoul.mjs",
     "verify:seoul": "node scripts/verify-seoul.mjs",
-    "register:plan": "node scripts/register-plan.mjs"
+    "register:plan": "node scripts/register-plan.mjs",
+    "extract:charts": "node scripts/extract-image-charts.mjs && node scripts/build-linkage.mjs"
   },
   "dependencies": {
     "lucide": "^0.468.0",
@@ -22,12 +29,15 @@
     "three": "^0.180.0"
   },
   "overrides": {
-    "osmtogeojson": {"@xmldom/xmldom": "0.9.12"}
+    "osmtogeojson": {
+      "@xmldom/xmldom": "0.9.12"
+    }
   },
   "devDependencies": {
     "cheerio": "^1.2.0",
     "playwright": "^1.55.0",
     "pngjs": "^7.0.0",
+    "sharp": "^0.35.4",
     "vite": "^7.0.0"
   }
 }

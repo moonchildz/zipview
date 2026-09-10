@@ -1,0 +1,11 @@
+import {readFile} from 'node:fs/promises';
+import {createUnitIndex} from '../src/unit-linkage.js';
+const catalog=JSON.parse(await readFile('research/linkage/generated/catalog.json','utf8'));
+const index=createUnitIndex(catalog),[command='coverage',...args]=process.argv.slice(2);
+let result;
+if(command==='coverage')result=catalog.coverage;
+else if(command==='search')result=index.search(args.join(' '));
+else if(command==='unit'&&args.length===3)result=index.resolve(...args);
+else if(command==='issues')result=catalog.issues;
+else throw new Error('coverage | search <address> | unit <address-or-id> <dong> <ho> | issues');
+console.log(JSON.stringify(result,null,2));

@@ -30,6 +30,7 @@ export class OutlookScene {
     sun.position.set(-400, 600, -200);
     this.scene.add(sun);
     this.cameras = [0, 1].map(() => new THREE.PerspectiveCamera(65, 1, 0.15, 40000));
+    this.cameras.forEach(camera=>camera.layers.enable(4));
     this.observer = new ResizeObserver(() => this.render());
     this.observer.observe(host);
     const canvas = this.renderer.domElement;
@@ -42,7 +43,7 @@ export class OutlookScene {
       this.update();
     });
     canvas.addEventListener('pointerup', e => {
-      if (this.dragStart && Math.hypot(e.clientX-this.dragStart[0],e.clientY-this.dragStart[1])<5) this.inspector?.pick(e.clientX,e.clientY);
+      if (!this.interior?.active && this.dragStart && Math.hypot(e.clientX-this.dragStart[0],e.clientY-this.dragStart[1])<5) this.inspector?.pick(e.clientX,e.clientY);
     });
     for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) canvas.addEventListener(type, () => { this.drag = null; this.dragStart = null; });
     canvas.addEventListener('wheel', e => {
@@ -92,6 +93,7 @@ export class OutlookScene {
       if (this.data.landmarks.some(l => l.id === `way/${building.id}`)) continue;
       if (building.points.length < 4) continue;
       for (const volume of building.parts ?? [building]) {
+      if(volume.points.length<4||volume.height<=0)continue;
       const shape = new THREE.Shape(volume.points.map(([x, z]) => new THREE.Vector2(x, -z)));
       const geometry = new THREE.ExtrudeGeometry(shape, { depth: volume.height, bevelEnabled: false });
       geometry.rotateX(-Math.PI / 2);
@@ -113,6 +115,7 @@ export class OutlookScene {
     for (const [key, geometries] of groups) {
       const merged = mergeGeometries(geometries);
       const mesh = new THREE.Mesh(merged, new THREE.MeshStandardMaterial({ color: { target: '#bbd5d3', estimated: '#c9c9c5', known: '#e7e4dc' }[key], roughness: 0.92 }));
+      if(key==='target')this.targetShell=mesh;
       this.scene.add(mesh);
       this.blockers.push(mesh);
       if (key === 'estimated') this.estimated = mesh;
@@ -129,6 +132,7 @@ export class OutlookScene {
         this.facadeMeshes.push(facade);
         for (const child of children) { child.geometry.dispose(); if (child.material !== facade.material) child.material.dispose(); }
       }
+      if(key==='target')mesh.traverse(child=>child.layers.set(4));
     }
     this.streets = buildStreets(this.data);
     this.scene.add(this.streets);
@@ -163,7 +167,8 @@ export class OutlookScene {
   update() {
     if (!this.data) return;
     const s = this.state;
-    const [x, z] = localPoint(this.data.window.lon, this.data.window.lat, this.data.center);
+    this.interior?.sync();
+    const [x, z] = this.interior?.active ? this.interior.position() : localPoint(this.data.window.lon, this.data.window.lat, this.data.center);
     const yaw = THREE.MathUtils.degToRad(s.bearing), pitch = THREE.MathUtils.degToRad(s.pitch);
     this.cameras.forEach((camera, i) => {
       camera.position.set(x + s.east, eyeElevation(this.target.base, s.floors[i], s.floorHeight, s.offset, s.eyeHeight), z - s.north);
@@ -207,7 +212,7 @@ export class OutlookScene {
     point.setAttribute('cx', x); point.setAttribute('cy', z);
     document.querySelector('#locator-arrow').setAttribute('d', `M${x},${z} l${Math.sin(yaw) * 38},${-Math.cos(yaw) * 38}`);
     document.querySelector('#locator-cone').setAttribute('d', `M${x},${z} L${x + Math.sin(yaw - .35) * 38},${z - Math.cos(yaw - .35) * 38} L${x + Math.sin(yaw + .35) * 38},${z - Math.cos(yaw + .35) * 38} Z`);
-    document.querySelector('#window-warning').hidden = !insideFootprint([x, z], this.target.points);
+    document.querySelector('#window-warning').hidden = this.interior?.active || !insideFootprint([x, z], this.target.points);
     document.querySelector('#locator-bearing').textContent = `${Math.round(this.state.bearing)}°`;
     this.host.dataset.cameraXZ = `${x.toFixed(3)},${z.toFixed(3)}`;
   }
@@ -232,7 +237,7 @@ export class OutlookScene {
       this.renderer.setScissor(x, y, w, h);
       this.renderer.render(this.scene, camera);
       const pin = document.querySelector(`#landmark-pin-${i}`);
-      if (this.selectedLandmark && this.selectedLandmark.group.visible) {
+      if (!this.interior?.active && this.selectedLandmark && this.selectedLandmark.group.visible) {
         const landmark = this.selectedLandmark;
         const otherLandmarks = this.landmarks.filter(l => l !== landmark).map(l => l.group);
         const sight = landmarkSight(camera, landmark, [...this.blockers, ...otherLandmarks]);
@@ -242,7 +247,7 @@ export class OutlookScene {
         pin.style.top = `${Math.max(height - y - h + 80, height - y - (sight.projected.y + 1) / 2 * h - 6)}px`;
         statuses.push(`${this.state.floors[i]}층: ${!sight.inFrame ? '화면 밖' : sight.clear ? '상단 가림 없음' : '상단 가림'}`);
       } else { pin.hidden = true; }
-      this.inspector?.render(camera,{x,top:height-y-h,w,h},i);
+      if(!this.interior?.active)this.inspector?.render(camera,{x,top:height-y-h,w,h},i);
     });
     const selected = this.selectedLandmark;
     if (selected) {

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {xiPlanOrientation,transformPlanPoint,XI_PLAN_CROP} from '../src/xi-plan-orientation.js';
+import {xiPlanOrientation,transformPlanPoint,inversePlanPoint,XI_PLAN_CROP} from '../src/xi-plan-orientation.js';
 import {xiOpeningCandidates} from '../src/xi-unit-layout.js';
 
 const data=JSON.parse(readFileSync('research/gyeonghuigung-xi/scene.json'));
@@ -20,6 +20,20 @@ test('north-up plan rotates front toward the world bearing and mirrors exactly o
     const {x,y,width,height}=XI_PLAN_CROP;
     for(const p of [[x,y],[x+width,y],[x,y+height],[x+width,y+height]]) {
       for(const n of transformPlanPoint(matrix,p))assert.ok(n>=71.99&&n<=728.01);
+    }
+  }
+});
+
+test('rotated and mirrored observer clicks invert back to the same room position',()=>{
+  for(const mirrored of [false,true]){
+    const {matrix}=xiPlanOrientation(target,mirrored);
+    for(const point of [[1142,430],[996,470],[1127,220]]){
+      const screen=transformPlanPoint(matrix,point),back=inversePlanPoint(matrix,screen);
+      assert.ok(Math.hypot(...back.map((v,i)=>v-point[i]))<1e-8);
+      const up=inversePlanPoint(matrix,[screen[0],screen[1]-8]);
+      const projected=transformPlanPoint(matrix,up);
+      assert.ok(Math.abs(projected[0]-screen[0])<1e-8);
+      assert.ok(Math.abs(projected[1]-screen[1]+8)<1e-8);
     }
   }
 });

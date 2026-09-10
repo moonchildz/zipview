@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {readFileSync,existsSync} from 'node:fs';
+import {createUnitIndex} from '../src/unit-linkage.js';
+test('real adapters link every transcribed unit, retain missing files, and rebuild deterministically',()=>{
+  execFileSync(process.execPath,['scripts/build-linkage.mjs'],{stdio:'pipe'});
+  const path='research/linkage/generated/catalog.json',first=readFileSync(path,'utf8'),c=JSON.parse(first),index=createUnitIndex(c);
+  assert.equal(c.units.filter(u=>u.complexId==='seoul-daebang-planned').length,283);
+  assert.equal(c.units.filter(u=>u.complexId==='sinchon-prugio'&&!u.scenario&&u.source==='research/sinchon-prugio/README.md').length,22);
+  assert.equal(c.units.filter(u=>u.complexId==='gyeonghuigung-xi').length,102);
+  assert.equal(index.resolve('경희궁자이 2단지','211','1201').geometry.id,608374573);
+  assert.equal(index.resolve('경희궁자이 2단지','211','1207').status,'unit-unlinked');
+  assert.equal(index.resolve('서울대방','101','202').status,'unit-unlinked');
+  assert.equal(index.resolve('신촌푸르지오2단지','102','201').status,'building-unlinked');
+  assert.ok(c.units.every(u=>!u.viewReady&&!u.verified));
+  if(existsSync('mapinfo'))assert.ok(c.assets.some(a=>a.path.startsWith('mapinfo/')&&a.complexId==='sinchon-prugio'));
+  execFileSync(process.execPath,['scripts/build-linkage.mjs'],{stdio:'pipe'});
+  assert.equal(readFileSync(path,'utf8'),first);
+});

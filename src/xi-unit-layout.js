@@ -1,5 +1,6 @@
 import {geographicPoint} from './outlook-math.js';
 import {xiOrientationDecision} from './xi-orientation-evidence.js';
+import {getXiPlan} from './xi-plans.js';
 
 // Image coordinates refer to the expanded drawing in reference-0.png.
 // Only legible exterior glazed openings are included, not inferred bathroom vents.
@@ -40,15 +41,16 @@ export function xiOpeningCandidates(building,center,{line=1,mirrored}={}) {
   if(mirrored===undefined)mirrored=decision.mirrored;
   if(typeof mirrored!=='boolean')throw new Error('세대 좌우를 판정할 도면 근거가 부족합니다.');
   const edges=xiFacadeEdges(building),bearing=xiFrontBearing(building);
-  return XI_OPENINGS.map(opening=>{
-    const imageFraction=(opening.pixel[0]-XI_PLAN_SCALE.left)/(XI_PLAN_SCALE.right-XI_PLAN_SCALE.left);
+  const plan=getXiPlan(building),scale=plan.scale;
+  return plan.openings.map(opening=>{
+    const imageFraction=(opening.pixel[0]-scale.left)/(scale.right-scale.left);
     const fraction=(line===1?.5:0)+(mirrored?1-imageFraction:imageFraction)*.5;
     const edge=edges[opening.side],wall=lerp(...edge,fraction);
     const outward=opening.side==='front'?bearing:(bearing+180)%360;
     const n=normal(outward),point=wall.map((v,i)=>v+n[i]*.2);
     const length=Math.hypot(...edge[1].map((v,i)=>v-edge[0][i]));
     const tangent=edge[1].map((v,i)=>(v-edge[0][i])/length);
-    const widthMeters=Math.abs(opening.segment[2]-opening.segment[0])*XI_PLAN_SCALE.widthMeters/(XI_PLAN_SCALE.right-XI_PLAN_SCALE.left);
+    const widthMeters=Math.abs(opening.segment[2]-opening.segment[0])*scale.widthMeters/(scale.right-scale.left);
     const endpoints=[-1,1].map(sign=>wall.map((v,i)=>v+sign*tangent[i]*widthMeters/2));
     return {...opening,line,fraction,wall,point,bearing:outward,...geographicPoint(...point,center),
       widthMeters,endpoints,...XI_WINDOW_VERTICAL,widthSource:'dimension-scaled-raster-estimate',
@@ -60,6 +62,16 @@ export function xiOpeningCandidates(building,center,{line=1,mirrored}={}) {
 export function applyXiLayoutHypothesis(data) {
   const target=data.buildings.find(b=>b.id===data.targetBuildingId);
   const p=target.points;
+  if(target.name==='211'){
+    target.xiLayout={front:[2,1],rear:[3,0]};target.xiPlanId='84A';
+    target.parts=[{...target,points:[],height:0,layoutRole:'other-lines'},
+      {...target,layoutRole:'84A-lines-1-2',facadeOpenings:[]}];return target;
+  }
+  if(target.name==='205'){
+    target.xiLayout={front:[5,6],rear:[9,7]};
+    target.parts=[{...target,points:[...p.slice(0,6),p[9],p[10],p[0]],layoutRole:'other-lines'},
+      {...target,points:[p[5],p[6],p[7],p[8],p[9],p[5]],layoutRole:'59A-lines-1-2',facadeOpenings:[]}];return target;
+  }
   // Preserve the source footprint. Split its two adjoining volumes for rendering only.
   target.parts=[
     {...target,points:[...p.slice(0,7),p[10],p[11],p[0]],layoutRole:'other-lines'},

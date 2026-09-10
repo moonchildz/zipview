@@ -1,0 +1,9 @@
+.xi-interior-controls{display:block;padding:16px;border-right:1px solid #dce4df;background:#f8faf8;min-width:0}
+.xi-interior-controls[hidden]{display:none}
+#outlook-host[data-interior="active"] .building-labels{display:none}
+.xi-interior-controls p{font-size:12px!important;line-height:1.7;max-width:none!important;margin:8px 0!important}
+#xi-observer-plan{display:block;width:220px;max-width:100%;height:210px;background:white;cursor:crosshair;touch-action:manipulation}
+#xi-observer-plan:focus-visible{outline:2px solid #176957}
+.xi-interior-presets{display:flex;gap:8px;flex-wrap:wrap}.xi-interior-presets button{padding:9px;font-size:12px}
+@media(max-width:900px){.xi-interior-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+@media(max-width:430px){.xi-interior-controls{display:block}}

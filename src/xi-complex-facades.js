@@ -51,7 +51,7 @@ export function applyXiComplexFacades(data) {
     if(b.id===608374571)prepare205(b,data.center);
     const partialPlan=b.id===data.targetBuildingId||b.id===608374571;
     b.facadeEvidence={status:partialPlan?'partial-plan':'reference-pattern',verified:false,
-      description:partialPlan?'1·2라인: 59A 도면 비례 후보 · 나머지: 조감도 참고 추정':'조감도 참고 입면 · 타입별 창 치수 미확보',
+      description:partialPlan?`1·2라인: ${b.xiPlanId??'59A'} 도면 비례 후보 · 나머지: 조감도 참고 추정`:'조감도 참고 입면 · 타입별 창 치수 미확보',
       reference:'research/gyeonghuigung-xi/images/site-r1472-043.jpg'};
     for(const volume of b.parts??[b]) {
       volume.facadePalette=XI_COMPLEX_PALETTE;

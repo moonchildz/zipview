@@ -198,7 +198,16 @@ function search() {
   view = selection.scenario ? 'outlook' : selectedPlan.model ? '3d' : 'plan';
   renderSelection();
 }
-$('#search-form').addEventListener('submit', e => { e.preventDefault(); search(); });
+$('#search-form').addEventListener('submit', e => {
+  e.preventDefault();location.href=`/?${new URLSearchParams({site:'catalog',address:$('#address').value,building:$('#building').value,unit:$('#unit').value})}`;
+});
+const requestedUnit = new URLSearchParams(location.search);
+if (requestedUnit.has('building') && requestedUnit.has('unit')) {
+  $('#address').value = complex.address;
+  $('#building').value = requestedUnit.get('building');
+  $('#unit').value = requestedUnit.get('unit');
+  search();
+}
 $$('[data-example]').forEach(button => button.addEventListener('click', () => {
   const [building, unit] = button.dataset.example.split(',');
   $('#address').value = '북아현로1길 50';

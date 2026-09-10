@@ -20,6 +20,7 @@ export function mountXiWindowFacade(outlook) {
     }
     const spec=xiFacadeSpec(outlook.target,outlook.data.center,{orientations,floorHeight:outlook.state.floorHeight});
     group=buildFacades(spec);
+    group.traverse(child=>child.layers.set(4));
     group.visible=document.querySelector('#facades-visible').checked;
     outlook.scene.add(group);outlook.facadeMeshes.push(group);
     outlook.host.dataset.windowFacade=JSON.stringify({openings:spec.facadeOpenings.length,floors:spec.levels,

@@ -4,6 +4,8 @@
 
 ## 실행
 
+주소·동·호 조회는 `/?site=catalog`에서 사용할 수 있다. 미수집 주소는 공개 공급자에서 평형·평면도·동호수표를 자동 수집한다. 일괄 실행은 `npm run pipeline:addresses -- --file research/linkage/addresses.example.json`. `build:linkage`는 저장된 자료의 인덱스만 재생성한다. 이미지와 호수 연결의 제공 여부를 구분해 표시한다. [실행 방법과 실제 수집 범위](research/linkage/README.md).
+
 Node.js 환경에서 `npm install`, `npm run dev`.
 
 현재 PC에는 작업 폴더의 `.tools/node-v24.21.0-win-x64`에 포터블 Node.js를 준비했다. PowerShell에서:

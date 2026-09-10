@@ -1,0 +1,333 @@
+{
+  "id": "xi-r1472-color-chart-v1",
+  "complexId": "gyeonghuigung-xi",
+  "image": "research/linkage/downloads/charts/xi-r1472-color-chart-v1.jpg",
+  "source": "https://www.r1472.co.kr/_file/Group/21506081506430596_042.jpg",
+  "imageSize": [
+    800,
+    527
+  ],
+  "notes": "One-time document calibration: panel boundaries, legend semantics and digit font samples. Contains no building-line-type answers. Floor exceptions are not inferred from this site map.",
+  "legend": [
+    {
+      "type": "59A",
+      "sample": [
+        47,
+        425
+      ]
+    },
+    {
+      "type": "59B",
+      "sample": [
+        67,
+        425
+      ]
+    },
+    {
+      "type": "59C",
+      "sample": [
+        87,
+        425
+      ]
+    },
+    {
+      "type": "84A",
+      "sample": [
+        107,
+        425
+      ]
+    },
+    {
+      "type": "84B",
+      "sample": [
+        127,
+        425
+      ]
+    },
+    {
+      "type": "84C",
+      "sample": [
+        147,
+        425
+      ]
+    },
+    {
+      "type": "84D",
+      "sample": [
+        167,
+        425
+      ]
+    },
+    {
+      "type": "84E",
+      "sample": [
+        187,
+        425
+      ]
+    },
+    {
+      "type": "84F",
+      "sample": [
+        207,
+        425
+      ]
+    },
+    {
+      "type": "84G",
+      "sample": [
+        227,
+        425
+      ]
+    },
+    {
+      "type": "101A",
+      "sample": [
+        247,
+        425
+      ]
+    },
+    {
+      "type": "101B",
+      "sample": [
+        267,
+        425
+      ]
+    },
+    {
+      "type": "101C",
+      "sample": [
+        287,
+        425
+      ]
+    },
+    {
+      "type": "116A",
+      "sample": [
+        307,
+        425
+      ]
+    },
+    {
+      "type": "116B",
+      "sample": [
+        327,
+        425
+      ]
+    },
+    {
+      "type": "116C",
+      "sample": [
+        347,
+        425
+      ]
+    },
+    {
+      "type": "138",
+      "sample": [
+        367,
+        425
+      ]
+    }
+  ],
+  "glyphReferences": [
+    {
+      "digit": 1,
+      "box": [
+        282,
+        173,
+        9,
+        11
+      ],
+      "backgroundType": "84A"
+    },
+    {
+      "digit": 2,
+      "box": [
+        282,
+        189,
+        9,
+        11
+      ],
+      "backgroundType": "84A"
+    },
+    {
+      "digit": 3,
+      "box": [
+        279,
+        203,
+        10,
+        11
+      ],
+      "backgroundType": "84C"
+    },
+    {
+      "digit": 4,
+      "box": [
+        289,
+        219,
+        10,
+        12
+      ],
+      "backgroundType": "84B"
+    },
+    {
+      "digit": 5,
+      "box": [
+        282,
+        227,
+        10,
+        12
+      ],
+      "backgroundType": "84B"
+    },
+    {
+      "digit": 6,
+      "box": [
+        263,
+        219,
+        10,
+        12
+      ],
+      "backgroundType": "84A"
+    },
+    {
+      "digit": 7,
+      "box": [
+        250,
+        219,
+        10,
+        12
+      ],
+      "backgroundType": "84A"
+    }
+  ],
+  "panels": [
+    {
+      "building": "201",
+      "box": [
+        459,
+        286,
+        55,
+        45
+      ]
+    },
+    {
+      "building": "202",
+      "box": [
+        392,
+        286,
+        56,
+        45
+      ]
+    },
+    {
+      "building": "203",
+      "box": [
+        330,
+        286,
+        55,
+        45
+      ]
+    },
+    {
+      "building": "204",
+      "box": [
+        269,
+        279,
+        54,
+        52
+      ]
+    },
+    {
+      "building": "205",
+      "box": [
+        205,
+        279,
+        46,
+        52
+      ]
+    },
+    {
+      "building": "206",
+      "box": [
+        448,
+        216,
+        62,
+        40
+      ]
+    },
+    {
+      "building": "207",
+      "box": [
+        377,
+        173,
+        62,
+        72
+      ]
+    },
+    {
+      "building": "208",
+      "box": [
+        308,
+        174,
+        64,
+        66
+      ]
+    },
+    {
+      "building": "209",
+      "box": [
+        247,
+        170,
+        60,
+        70
+      ]
+    },
+    {
+      "building": "210",
+      "box": [
+        199,
+        192,
+        45,
+        47
+      ]
+    },
+    {
+      "building": "211",
+      "box": [
+        491,
+        188,
+        22,
+        39
+      ]
+    },
+    {
+      "building": "212",
+      "box": [
+        379,
+        110,
+        48,
+        44
+      ]
+    },
+    {
+      "building": "213",
+      "box": [
+        307,
+        109,
+        62,
+        46
+      ]
+    },
+    {
+      "building": "214",
+      "box": [
+        259,
+        111,
+        40,
+        44
+      ]
+    }
+  ],
+  "sha256": "4b4e5fb566d884feba9f71296df4e2d72cad2adaa817a2a2130f3a27e0b1cac4"
+}

@@ -1,5 +1,5 @@
 import {XI_OPENINGS,xiOpeningCandidates,xiUnitPolygon} from './xi-unit-layout.js';
-import referencePlan from '../research/gyeonghuigung-xi/images/reference-0.png';
+import {getXiPlan} from './xi-plans.js';
 import './xi-window-picker.css';
 import {mountXiWindowFacade} from './xi-window-facade.js';
 import {xiPlanOrientation,transformPlanPoint} from './xi-plan-orientation.js';
@@ -14,6 +14,7 @@ const svgNode=(tag,attributes)=>{
 };
 
 export function mountXiWindowPicker(outlook) {
+  const plan=getXiPlan(outlook.target),crop=plan.crop;
   const stage=document.createElement('div');stage.className='xi-window-stage';
   const picker=document.createElement('section');picker.className='xi-window-picker';
   picker.setAttribute('aria-label','세대별 창문 선택');
@@ -22,7 +23,7 @@ export function mountXiWindowPicker(outlook) {
     <button id="xi-mirror" class="icon-button" type="button" aria-label="지도 연결 좌우 반전" aria-pressed="false" title="지도 연결 좌우 반전"><i data-lucide="flip-horizontal-2"></i></button></div>
     <div class="xi-plan-surface"><svg id="xi-opening-plan" viewBox="0 0 800 800" aria-label="북쪽이 위인 59A 확장형 참고 평면과 외부 창 후보">
       <defs><clipPath id="xi-plan-crop"><rect x="850" y="90" width="560" height="545"/></clipPath></defs>
-      <g id="xi-plan-image-transform"><g clip-path="url(#xi-plan-crop)"><image href="${referencePlan}" width="1440" height="634"/></g></g>
+      <g id="xi-plan-image-transform"><g clip-path="url(#xi-plan-crop)"><image href="${plan.image}" width="1440" height="634"/></g></g>
       <g class="xi-compass" aria-label="위 북쪽, 오른쪽 동쪽, 아래 남쪽, 왼쪽 서쪽"><text x="400" y="32">N</text><text x="778" y="408">E</text><text x="400" y="790">S</text><text x="22" y="408">W</text></g>
       <path id="xi-plan-sight" fill="none" stroke="#bd652b" stroke-width="5" pointer-events="none"/>
       <g id="xi-plan-entrance" pointer-events="none"><rect x="-9" y="-9" width="18" height="18" fill="#356a91" stroke="white" stroke-width="2"/><text x="15" y="7" font-size="22" fill="#245678">현관</text></g>
@@ -38,7 +39,7 @@ export function mountXiWindowPicker(outlook) {
   $('#outlook-host').before(stage);stage.append(picker,$('#outlook-host'));
   const orientations=xiLineOrientations(outlook.target);
   const updateFacade=mountXiWindowFacade(outlook);
-  let line=1,mirrored=orientations[line],selected='living';
+  let line=outlook.options.initialLine??1,mirrored=orientations[line],selected='living';
   let candidates=[];
 
   function choose(id) {
@@ -54,6 +55,7 @@ export function mountXiWindowPicker(outlook) {
     $('#xi-active-window').textContent=opening.name;
     $('#xi-window-size').textContent=`창 폭 약 ${opening.widthMeters.toFixed(2)}m · 도면 비례 추정`;
     $('#xi-window-direction').textContent=`${Math.round(opening.bearing)}° · ${opening.side==='front'?'남동향':'북서향'} · 외벽 밖 0.2m`;
+    outlook.interior?.selectWindow(opening);
     picker.querySelectorAll('[data-opening]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.opening===id)));
     drawPlan();drawMap();outlook.update();
   }
@@ -62,8 +64,8 @@ export function mountXiWindowPicker(outlook) {
     const orientation=xiPlanOrientation(outlook.target,mirrored),point=p=>transformPlanPoint(orientation.matrix,p);
     $('#xi-plan-image-transform').setAttribute('transform',`matrix(${orientation.matrix.join(' ')})`);
     Object.assign($('#xi-opening-plan').dataset,{mirrored:String(mirrored),rotation:String(orientation.rotation),northUp:'true'});
-    $('#xi-plan-entrance').setAttribute('transform',`translate(${point(XI_PLAN_ENTRANCE.entrance).join(' ')})`);
-    for(const w of XI_OPENINGS) {
+    $('#xi-plan-entrance').setAttribute('transform',`translate(${point(plan.entrance.entrance).join(' ')})`);
+    for(const w of plan.openings) {
       const center=point(w.pixel),a=point(w.segment.slice(0,2)),b=point(w.segment.slice(2));
       const marker=$(`#xi-plan-openings [data-opening="${w.id}"]`);
       marker.setAttribute('transform',`translate(${center.join(' ')})`);
@@ -77,6 +79,9 @@ export function mountXiWindowPicker(outlook) {
 
   function drawMap() {
     const map=$('#xi-unit-map');
+    const xs=outlook.target.points.map(p=>p[0]),ys=outlook.target.points.map(p=>p[1]);
+    const minX=Math.min(...xs)-5,minY=Math.min(...ys)-5;
+    map.setAttribute('viewBox',`${minX} ${minY} ${Math.max(...xs)-minX+5} ${Math.max(...ys)-minY+5}`);
     const focused=map.contains(document.activeElement)?document.activeElement.dataset.opening:null;
     map.replaceChildren();
     map.append(svgNode('polygon',{points:outlook.target.points.map(p=>p.join(',')).join(' '),fill:'#e0e5e5',stroke:'#899798','stroke-width':'.3'}));
@@ -95,7 +100,7 @@ export function mountXiWindowPicker(outlook) {
     }
     const w=candidates.find(w=>w.id===selected),yaw=w.bearing*Math.PI/180;
     map.append(svgNode('path',{d:`M${w.point} l${Math.sin(yaw)*7},${-Math.cos(yaw)*7}`,stroke:'#bd652b','stroke-width':'.6',fill:'none'}));
-    const north=svgNode('text',{x:-25,y:-23,'font-size':3,fill:'#263c32'});north.textContent='N ↑';map.append(north);
+    const north=svgNode('text',{x:minX+1,y:minY+3,'font-size':3,fill:'#263c32'});north.textContent='N ↑';map.append(north);
     if(focused)map.querySelector(`[data-opening="${focused}"]`)?.focus({preventScroll:true});
   }
 
@@ -106,7 +111,7 @@ export function mountXiWindowPicker(outlook) {
     });
   }
 
-  for(const [i,w] of XI_OPENINGS.entries()) {
+  for(const [i,w] of plan.openings.entries()) {
     const group=svgNode('g',{role:'button',tabindex:0,'aria-label':`${w.name} 창 전망`,'aria-pressed':'false',class:'xi-opening-marker'});
     group.dataset.opening=w.id;
     group.append(svgNode('rect',{x:-32,y:-28,width:64,height:56,fill:'transparent'}));
@@ -131,9 +136,16 @@ export function mountXiWindowPicker(outlook) {
   $('#xi-line').addEventListener('change',e=>{line=Number(e.target.value);mirrored=orientations[line];refresh();});
   $('#xi-mirror').addEventListener('click',()=>{mirrored=!mirrored;orientations[line]=mirrored;refresh();});
   $('#outlook-reset').addEventListener('click',()=>choose(selected));
+  const img=$('#xi-opening-plan image');img.setAttribute('href',plan.image);img.setAttribute('width',plan.imageSize[0]);img.setAttribute('height',plan.imageSize[1]);
+  for(const [key,value] of Object.entries(crop))$('#xi-plan-crop rect').setAttribute(key,value);
+  $('.xi-picker-heading span').textContent=`${plan.id} · 연결 추정`;
+  $('#xi-line').value=String(line);
+  if(plan.id!=='59A'){
+    $('.xi-evidence').innerHTML='<summary>배치 근거와 오차</summary><p id="xi-orientation-basis"></p><p>211동 배치도의 1·2라인과 84A 부분을 연결했습니다. 84A 확장형 평면의 3810+5000+3515mm 치수로 창 폭을 추정합니다. 실제 준공 평면·창턱·층별 예외는 미검증입니다.</p><a href="/research/gyeonghuigung-xi/unit-lookup-research.md" target="_blank">자료 연결 근거</a>';
+  }
   refresh();
   return {updateFacade:()=>updateFacade(orientations),setMode(mode){
-    picker.hidden=mode==='outlook';stage.classList.toggle('xi-view-only',mode==='outlook');
+    picker.hidden=mode==='outlook'||mode==='3d';stage.classList.toggle('xi-view-only',mode==='outlook');
     $('#xi-opening-plan').toggleAttribute('hidden',mode==='site');$('#xi-unit-map').toggleAttribute('hidden',mode!=='site');
     outlook.render();
   }};

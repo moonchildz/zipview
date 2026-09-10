@@ -33,6 +33,7 @@ export function landmarkSight(camera, landmark, blockers) {
   if (!inFrame) return { inFrame, clear: false, projected };
   const direction = landmark.anchor.clone().sub(camera.position);
   const ray = new THREE.Raycaster(camera.position, direction.clone().normalize(), .3, direction.length() - 1);
+  ray.layers.mask = camera.layers.mask;
   // This only tests the loaded geometry to the top point, not real-world visibility.
   const clear = ray.intersectObjects(blockers.filter(o => o.visible), true).length === 0;
   return { inFrame, clear, projected };
