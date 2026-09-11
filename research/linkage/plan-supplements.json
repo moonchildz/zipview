@@ -1,0 +1,24 @@
+[
+  {
+    "complexId": "gyeonghuigung-xi",
+    "providerAreaId": "223785",
+    "displayType": "77A",
+    "variant": "extended",
+    "source": "https://w2althy.tistory.com/15598544",
+    "imageUrl": "https://t1.daumcdn.net/cfile/blog/998EC64B5B83AEB325",
+    "file": "research/linkage/downloads/hub/xi-77a-reference.jpg",
+    "sha256": "23a61278961692e5d5a47e34560bed3abb27205fed71b80e13bff986f2eebdc2",
+    "review": "Source post explicitly identifies phase 2 type 77A. Visually checked three-bedroom plan, front living room, rear kitchen, front left balcony and outdoor-unit space. Source dimensions are printed. As-built option and window heights remain unverified."
+  },
+  {
+    "complexId": "gyeonghuigung-xi",
+    "providerAreaId": "219262",
+    "displayType": "116A",
+    "variant": "extended",
+    "source": "https://w2althy.tistory.com/15598500",
+    "imageUrl": "https://t1.daumcdn.net/cfile/blog/244AC338592133B521",
+    "file": "research/linkage/downloads/hub/xi-116a-reference-1.jpg",
+    "sha256": "991a06c55355e6bbc1d1e3ab9d1a3f83d35990060084d9e40fc3b5ae79f8bfb8",
+    "review": "Source post identifies phase 2 building 207 type 116A. Visually checked expanded plan with four bedrooms, front living-room glazing, rear kitchen and dressing-room glazing. Kitchen option 1 is printed on the drawing. The source watermark is retained. As-built option and window heights are not verified."
+  }
+]

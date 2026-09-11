@@ -12,6 +12,16 @@ export function addressPipelinePlugin(){
   const install=server=>{
     server.middlewares.use(async(req,res,next)=>{
       const path=(req.url??'').split('?')[0];
+      if(!/^\/research\/linkage\/generated\/(catalog|report)\.json$/.test(path))return next();
+      if(req.method!=='GET'&&req.method!=='HEAD'){res.statusCode=405;return res.end();}
+      try{
+        const bytes=await readFile(path.slice(1));
+        res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');
+        res.end(req.method==='HEAD'?undefined:bytes);
+      }catch{res.statusCode=404;res.setHeader('Content-Type','application/json');res.end(JSON.stringify({error:'Local index missing'}));}
+    });
+    server.middlewares.use(async(req,res,next)=>{
+      const path=(req.url??'').split('?')[0];
       if(!/^\/research\/linkage\/downloads\/kb\/\d+\/\d+-(?:basic|extended)\.(?:jpg|png|webp)$/.test(path))return next();
       if(req.method!=='GET'&&req.method!=='HEAD'){res.statusCode=405;return res.end();}
       try{const bytes=await readFile(path.slice(1));res.setHeader('Content-Type',path.endsWith('.jpg')?'image/jpeg':path.endsWith('.png')?'image/png':'image/webp');res.end(req.method==='HEAD'?undefined:bytes);}catch{res.statusCode=404;res.end();}

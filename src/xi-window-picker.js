@@ -133,7 +133,10 @@ export function mountXiWindowPicker(outlook) {
     updateFacade(orientations);
     choose(selected);
   };
-  $('#xi-line').addEventListener('change',e=>{line=Number(e.target.value);mirrored=orientations[line];refresh();});
+  $('#xi-line').addEventListener('change',e=>{
+    if(outlook.options.isValidLine&&!outlook.options.isValidLine(Number(e.target.value),outlook.state.floors)){e.target.value=String(line);return;}
+    line=Number(e.target.value);mirrored=orientations[line];refresh();
+  });
   $('#xi-mirror').addEventListener('click',()=>{mirrored=!mirrored;orientations[line]=mirrored;refresh();});
   $('#outlook-reset').addEventListener('click',()=>choose(selected));
   const img=$('#xi-opening-plan image');img.setAttribute('href',plan.image);img.setAttribute('width',plan.imageSize[0]);img.setAttribute('height',plan.imageSize[1]);

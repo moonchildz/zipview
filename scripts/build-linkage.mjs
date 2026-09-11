@@ -3,7 +3,11 @@ import {existsSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {extractImageCharts} from './extract-image-charts.mjs';
-import {compileLinkage,normalizeAddress} from '../src/unit-linkage.js';
+import {compileLinkage,providerComplexTarget} from '../src/unit-linkage.js';
+import {unitCoverage} from '../src/unit-coverage.js';
+import {compileOfficialSites} from '../src/official-buildings.js';
+import {connectHousingInventory} from '../src/housing-inventory.js';
+import {attachPlanTraces} from './compile-plan-traces.mjs';
 import {complex as sinchon,plans as sinchonPlans,units as sinchonUnits} from '../src/data.js';
 import {normalizeComplexes,expandUnitRanges} from '../src/seoul-data.js';
 import {XI_UNIT_RULES,XI_UNIT_SOURCES} from '../src/xi-unit-registry.js';
@@ -17,7 +21,8 @@ async function optional(path){if(!existsSync(path)){inputs.push({path,status:'mi
 const daebang=await readJSON('research/seoul/daebang-unit-ranges.json');
 const complexes=[{...sinchon,providerId:'seoul:A10027851',lifecycle:'existing-pilot'},
   {id:'gyeonghuigung-xi',providerId:'seoul:A10027118',name:'경희궁자이 2단지',address:'서울특별시 종로구 송월길 99',aliases:['경희궁자이2단지아파트','송월길99','종로구 송월길99'],lifecycle:'existing-pilot'},
-  {id:daebang.id,name:daebang.name,address:daebang.address,aliases:['서울대방','신길동1280'],lifecycle:daebang.lifecycle}];
+  {id:daebang.id,name:daebang.name,address:daebang.address,aliases:['서울대방','신길동1280'],lifecycle:daebang.lifecycle,
+    unitInventory:{count:Object.values(daebang.expectedBuildingCounts).reduce((a,b)=>a+b,0),source:daebang.chartSource}}];
 const buildings=[],plans=[],units=[];
 const external=await optional('research/seoul/generated/complexes.json');
 const raw=await optional('research/seoul/raw/apartments.json');
@@ -25,12 +30,13 @@ const official=raw?normalizeComplexes(raw):external??[];
 for(const row of official){
   const local=complexes.find(c=>c.providerId===row.id);
   if(local){local.aliases.push(row.id);local.providerRecord=row;/* Combined phase records must not become exact phase aliases. */}
-  else complexes.push({...row,aliases:[],lifecycle:'provider-unverified'});
+  else complexes.push({...row,aliases:[row.landAddress].filter(Boolean),lifecycle:'provider-unverified'});
 }
 for(const p of sinchonPlans)plans.push({...p,complexId:sinchon.id,source:'research/sinchon-prugio/README.md',file:`research/sinchon-prugio/images/${p.id}.jpg`});
 for(const p of Object.values(XI_PLANS))plans.push({id:p.id,complexId:'gyeonghuigung-xi',file:p.source,source:p.id==='84A'?XI_UNIT_SOURCES.plan84:'research/gyeonghuigung-xi/plan-sources.json'});
 for(const id of ['55AH','55AL'])plans.push({id,complexId:daebang.id,file:'research/seoul/raw/daebang-55ah.png',source:'https://apply.lh.or.kr/lhapply/lhFile.do?fileid=67457871'});
-for(const p of plans)p.available=existsSync(p.file);
+for(const id of ['74A','74B'])plans.push({id,complexId:daebang.id,file:null,source:daebang.chartSource,model:false});
+for(const p of plans)p.available=!!p.file&&existsSync(p.file);
 for(const [complexId,path,site] of [[sinchon.id,'research/sinchon-prugio/outlook/scene.json','https://www.openstreetmap.org/way/463988053'],['gyeonghuigung-xi','research/gyeonghuigung-xi/scene.json','https://www.openstreetmap.org/way/359124892']]){
   const scene=await optional(path);if(!scene)continue;
   for(const b of scene.buildings.filter(b=>b.siteSource===site&&/^\d+$/.test(b.name)&&(complexId!==sinchon.id||sinchon.buildings.includes(b.name)))){
@@ -92,10 +98,10 @@ if(existsSync('research/linkage/packages'))for(const name of (await readdir('res
 // Public provider snapshots are produced by code, including newly searched addresses.
 if(existsSync('research/linkage/providers/kb'))for(const name of (await readdir('research/linkage/providers/kb')).filter(n=>/^\d+\.json$/.test(n)).sort()){
   const provider=await optional(`research/linkage/providers/kb/${name}`);
-  const matches=complexes.filter(c=>normalizeAddress(c.address)===normalizeAddress(provider.address));
-  let c=matches.length===1?matches[0]:complexes.find(c=>c.id===`kb:${provider.providerId}`);
+  let c=providerComplexTarget(complexes,provider);
   if(!c){c={id:`kb:${provider.providerId}`,name:provider.name,address:provider.address,aliases:[],lifecycle:'provider-unverified'};complexes.push(c);}
-  c.kbId=provider.providerId;c.planSource=provider.source;c.providerLinkStatus=provider.linkStatus;c.providerErrors=provider.errors;
+  c.kbId=provider.providerId;c.landAddress=provider.landAddress;c.planSource=provider.source;c.providerLinkStatus=provider.linkStatus;c.providerErrors=provider.errors;
+  c.providerHouseholds=provider.households;c.providerBuildingCount=provider.buildingCount;
   if(c.id==='sinchon-prugio'){
     c.aliases=[...(c.aliases??[]),c.name];c.name='신촌푸르지오 (1·2단지)';
     c.phaseBuildings={'1':['101','102','103','104','105','106'],'2':sinchon.buildings};
@@ -105,7 +111,7 @@ if(existsSync('research/linkage/providers/kb'))for(const name of (await readdir(
     for(const v of p.variants.length?p.variants:[{variant:'unavailable'}]){
       const id=`kb-${p.areaId}-${v.variant}`;
       plans.push({id,complexId:c.id,displayType:p.displayType,providerLabel:p.providerLabel,providerAreaId:p.areaId,
-        area:p.area,supply:p.supply,rooms:p.rooms,bathrooms:p.bathrooms,variant:v.variant,source:provider.source,
+        area:p.area,supply:p.supply,providerHouseholds:p.households,rooms:p.rooms,bathrooms:p.bathrooms,variant:v.variant,source:provider.source,
         file:v.file??null,imageUrl:v.url??null,available:!!v.file&&existsSync(v.file),model:false});
     }
   }
@@ -117,10 +123,21 @@ if(existsSync('research/linkage/providers/kb'))for(const name of (await readdir(
     const previous=units.find(r=>r.complexId===c.id&&r.building===u.building&&r.unit===u.unit);
     if(previous){
       // A known provider identity may corroborate, but never silently replace, a chart/model link.
-      if(previous.planId===plan.displayType){previous.providerEvidence={source:provider.source,areaId:u.areaId,planId:plan.id};continue;}
+      if(previous.planId===plan.displayType){
+        previous.providerEvidence={source:provider.source,areaId:u.areaId,planId:plan.id};
+        if(previous.scenario){previous.comparisonPreset=true;previous.scenario=false;previous.status='provider-unit-corroborated';}
+        continue;
+      }
     }
     units.push({...u,complexId:c.id,planId:plan.id,source:provider.source});
   }
+}
+for(const supplement of await optional('research/linkage/plan-supplements.json')??[]){
+  const base=plans.find(p=>p.complexId===supplement.complexId&&p.providerAreaId===supplement.providerAreaId);
+  if(!base||base.displayType!==supplement.displayType)continue;
+  const available=existsSync(supplement.file);
+  if(available&&createHash('sha256').update(await readFile(supplement.file)).digest('hex')!==supplement.sha256)throw new Error(`Supplement image hash mismatch: ${supplement.file}`);
+  plans.push({...base,...supplement,id:`supplement-${supplement.providerAreaId}-${supplement.variant}`,available,model:false});
 }
 for(const p of plans)if(p.file&&!/^research\/(?!.*(?:^|\/)\.\.\/).+\.(?:png|jpg|jpeg|webp|svg|pdf)$/i.test(p.file))throw new Error(`Invalid plan file: ${p.id}`);
 const assets=[];
@@ -144,10 +161,34 @@ for(const chart of await extractImageCharts()){
     lineAssociations.push({...row,complexId:chart.complexId,planId:plan.id,source:chart.source,imageHash:chart.imageHash,profileId:chart.id});
   }
 }
-const catalog=compileLinkage({complexes,buildings,plans,units,lineAssociations,assets,inputs});
+const officialPath='research/linkage/downloads/hub/target-buildings.json';
+const targetSites=compileOfficialSites(existsSync(officialPath)?await optional(officialPath):null);
+const inventoryPath='research/linkage/downloads/housing/target-units.json';
+const housing=connectHousingInventory({snapshot:existsSync(inventoryPath)?await optional(inventoryPath):null,sites:targetSites,plans,units,lineAssociations});
+for(const report of housing.reports){
+  if(report.completeInventory)complexes.find(c=>c.id===report.complexId).officialInventory={count:report.officialUnits,complete:true,source:'https://www.data.go.kr/data/3073746/fileData.do'};
+}
+const planTraceReport=await attachPlanTraces(plans);
+const catalog=compileLinkage({complexes,buildings,plans,units:housing.units,lineAssociations,assets,inputs});
+catalog.planTraceReport=planTraceReport;
+catalog.housingInventory=housing.reports;
+for(const site of targetSites)for(const fact of site.facts){
+  const building=buildings.find(b=>b.complexId===site.id&&b.building===fact.building);
+  if(building)building.officialBuilding=fact;
+}
+catalog.targetSites=targetSites;
+for(const unit of catalog.units){
+  const rule=unit.complexId==='gyeonghuigung-xi'?XI_UNIT_RULES[unit.building]:null;
+  if(rule&&unit.officialUnit&&unit.status==='linked'&&unit.plan?.available&&rule.planLines.includes(Number(unit.unit)%100)&&rule.planId===(unit.plan.displayType??unit.planId))unit.preview=`/?site=xi&building=${unit.building}&unit=${unit.unit}`;
+}
+for(const unit of catalog.units)if(unit.complexId===sinchon.id&&sinchon.buildings.includes(unit.building)&&unit.plan?.available&&unit.status!=='conflict')unit.planPreview=`/?site=sinchon&building=${unit.building}&unit=${unit.unit}`;
+catalog.coverage.previews=catalog.units.filter(u=>u.preview&&!u.scenario).length;
+catalog.unitCoverage=unitCoverage(catalog);
+catalog.coverage.fullyLinkedComplexes=catalog.unitCoverage.filter(c=>c.completePlanLookup).length;
+catalog.coverage.sourceUnitsWithPlanImages=catalog.unitCoverage.reduce((n,c)=>n+c.unitsWithPlanImages,0);
 await mkdir('research/linkage/generated',{recursive:true});
 // Rename only complete snapshots; a failed parse/validation leaves the previous index intact.
-for(const [name,value] of [['catalog',catalog],['report',{coverage:catalog.coverage,inputs,issues:catalog.issues}]]){
+for(const [name,value] of [['catalog',catalog],['target-sites',targetSites],['report',{coverage:catalog.coverage,unitCoverage:catalog.unitCoverage,targetSites,housingInventory:housing.reports,inputs,issues:catalog.issues}]]){
   const path=`research/linkage/generated/${name}.json`;await writeFile(`${path}.tmp`,JSON.stringify(value,null,2)+'\n');await rename(`${path}.tmp`,path);
 }
 console.log(JSON.stringify(catalog.coverage,null,2));

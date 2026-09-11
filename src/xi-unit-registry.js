@@ -1,3 +1,5 @@
+import {createUnitIndex} from './unit-linkage.js';
+
 export const XI_UNIT_SOURCES={
   lines:'https://www.r1472.co.kr/_file/Group/21506081506430596_042.jpg',
   types:'https://s3.ap-northeast-2.amazonaws.com/zippoom-blueprint/1c0611ad-1ccd-488b-aa26-70017fdeee9a%EA%B2%BD%ED%9D%AC%EA%B6%81%EC%9E%90%EC%9D%B4.webp',
@@ -10,7 +12,7 @@ export const XI_UNIT_RULES={
   '205':{buildingId:608374571,knownLines:[1,2,3,4,5],planLines:[1,2],firstFloor:2,lastFloor:21,buildingFloors:21,planId:'59A',exclusiveArea:59.85,supplyArea:82.6},
   '211':{buildingId:608374573,knownLines:[1,2],planLines:[1,2],firstFloor:2,lastFloor:15,buildingFloors:15,planId:'84A',exclusiveArea:84.61,supplyArea:111.55},
 };
-export function resolveXiUnit({complex='경희궁자이2단지',building,unit}){
+export function resolveXiUnit({complex='경희궁자이2단지',building,unit,linked,buildingUnits}){
   const normalized=String(complex).replace(/[\s·(),-]/g,'');
   const supported=['경희궁자이2단지','경희궁자이2단지아파트','송월길99','서울특별시종로구송월길99','서울종로구송월길99'];
   const b=String(building??'').trim().replace(/동$/,''),u=String(unit??'').trim().replace(/호$/,'');
@@ -18,6 +20,20 @@ export function resolveXiUnit({complex='경희궁자이2단지',building,unit}){
   if(!supported.includes(normalized))return fail('unknown-complex','이 단지의 동·호 연결 자료는 아직 등록되지 않았습니다.');
   if(!/^\d{3}$/.test(b)||!/^\d{3,5}$/.test(u))return fail('invalid-input','동과 호수를 숫자로 입력해 주세요. 예: 211동 1201호');
   const floor=Math.floor(+u/100),line=+u%100,rule=XI_UNIT_RULES[b];
+  if(linked){
+    if(linked.status!=='linked'||!linked.plan?.available||linked.scenario)return fail('unit-not-linked','공통 호별 자료에서 이 호수의 평면도를 확인하지 못했습니다.');
+    const type=linked.plan.displayType??linked.planId;
+    if(linked.building!==b||linked.unit!==String(+u)||linked.complex?.id!=='gyeonghuigung-xi')return fail('unit-identity-conflict','세대 식별 정보가 일치하지 않습니다.');
+    if(!rule||!rule.planLines.includes(line)||rule.planId!==type)return fail('unmapped-type','호수와 평면도는 연결되어 있으며 이 타입의 공간 배치는 연결 중입니다.');
+    const sourceUnits=(buildingUnits??[]).filter(r=>(r.plan?.displayType??r.planId)===type&&r.status==='linked');
+    const floors=sourceUnits.filter(r=>Number(r.unit)%100===line).map(r=>Math.floor(Number(r.unit)/100)).sort((a,b)=>a-b);
+    if(!floors.includes(floor))return fail('unit-identity-conflict','층별 세대 목록이 일치하지 않습니다.');
+    return {...rule,complex:'경희궁자이2단지',building:b,unit:String(+u),floor,line,
+      firstFloor:floors[0],lastFloor:floors.at(-1),availableFloors:floors,unitNumbers:sourceUnits.map(r=>r.unit),
+      exclusiveArea:linked.officialUnit?.exclusiveArea??linked.plan.area??rule.exclusiveArea,
+      status:linked.sourceStatus??'source-linked',ready:true,verified:false,sources:[linked.source,...Object.values(XI_UNIT_SOURCES)],
+      message:'호별 자료 연결 · 창 위치와 준공 상태는 추정'};
+  }
   if(!rule)return fail('unmapped-building',`${b}동의 동호수·타입 연결 자료가 아직 등록되지 않았습니다.`);
   if(!rule.knownLines.includes(line))return fail('line-not-in-source',`${b}동 배치도에는 ${rule.knownLines.join('·')}라인이 표시돼 있습니다. ${u}호의 ${line}라인은 자료와 맞지 않습니다.`,{knownLines:rule.knownLines,sources:[XI_UNIT_SOURCES.lines],suggestions:rule.planLines.map(n=>`${floor*100+n}`)});
   if(floor<1||floor>rule.buildingFloors)return fail('floor-outside-source',`${b}동은 자료상 최고 ${rule.buildingFloors}층입니다.`);
@@ -27,4 +43,12 @@ export function resolveXiUnit({complex='경희궁자이2단지',building,unit}){
   return {...rule,complex:'경희궁자이2단지',building:b,unit:String(+u),floor,line,status:'source-linked-candidate',ready:true,verified:false,
     sources:[XI_UNIT_SOURCES.lines,XI_UNIT_SOURCES.types],message:'배치도·타입 자료 연결 후보 · 준공 및 층별 예외 미검증'};
 }
-export function requestedXiUnit(){const p=new URLSearchParams(location.search);return resolveXiUnit({complex:p.get('complex')??undefined,building:p.get('building')??'204',unit:p.get('unit')??'201'});}
+let catalogPromise;
+export async function requestedXiUnit(){
+  const p=new URLSearchParams(location.search),args={complex:p.get('complex')??undefined,building:p.get('building')??'204',unit:p.get('unit')??'201'};
+  catalogPromise??=fetch('/research/linkage/generated/catalog.json').then(r=>{if(!r.ok)throw new Error('Catalog unavailable');return r.json();}).catch(()=>null);
+  const catalog=await catalogPromise;
+  if(!catalog)return resolveXiUnit(args);
+  const linked=createUnitIndex(catalog).resolve(args.complex??'경희궁자이2단지',args.building,args.unit);
+  return resolveXiUnit({...args,linked,buildingUnits:catalog.units.filter(u=>u.complexId==='gyeonghuigung-xi'&&u.building===args.building)});
+}

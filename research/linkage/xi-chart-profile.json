@@ -7,7 +7,28 @@
     800,
     527
   ],
-  "notes": "One-time document calibration: panel boundaries, legend semantics and digit font samples. Contains no building-line-type answers. Floor exceptions are not inferred from this site map.",
+  "notes": "Document calibration includes manually reviewed line-number positions. Types are read from source colors, not user answers. Mixed-color cells and unreadable cells remain unresolved. No floor ranges or physical reflection are inferred.",
+  "reviewedLineMarkers": [
+    ["201",1,495,294],["201",2,503,309],["201",3,497,319],["201",4,480,310],["201",5,465,310],
+    ["202",1,422,294],["202",2,433,309],["202",3,425,319],["202",4,408,310],["202",5,395,310],
+    ["203",1,350,294],["203",2,359,309],["203",3,351,319],["203",4,334,310],
+    ["204",1,293,287],["204",2,293,298],["204",3,301,309],["204",4,294,319],["204",5,276,310],
+    ["205",1,231,287],["205",2,231,298],["205",3,239,309],["205",4,232,319],["205",5,215,310],
+    ["206",1,500,236],["206",2,492,244],["206",3,474,238],["206",4,459,238],
+    ["207",1,417,183],["207",2,417,196],["207",3,417,211],["207",4,428,229],["207",5,418,240],["207",6,398,230],
+    ["208",1,353,181],["208",2,354,197],["208",4,360,227],["208",5,354,234],["208",6,334,227],["208",7,320,228],
+    ["209",1,286,178],["209",2,287,193],["209",3,285,208],["209",4,293,224],["209",5,287,231],["209",6,267,224],["209",7,253,226],
+    ["210",2,231,221],["210",3,224,230],["211",1,499,198],["211",2,499,212],
+    ["212",2,417,136],["212",3,409,145],["212",4,393,133],
+    ["213",2,361,138],["213",3,352,144],["213",4,334,135],["213",5,320,135],
+    ["214",2,295,138],["214",3,288,145]
+  ],
+  "unresolvedLineMarkers": [
+    ["208",3,"unreadable-type-region"],
+    ["210",1,"mixed-type-region-needs-floor-chart"],["210",4,"mixed-type-region-needs-floor-chart"],
+    ["212",1,"mixed-type-region-needs-floor-chart"],["213",1,"mixed-type-region-needs-floor-chart"],
+    ["214",1,"mixed-type-region-needs-floor-chart"],["214",4,"mixed-type-region-needs-floor-chart"]
+  ],
   "legend": [
     {
       "type": "59A",

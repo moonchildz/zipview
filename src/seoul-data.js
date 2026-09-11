@@ -6,8 +6,10 @@ export function normalizeComplex(row) {
   const x=numeric(row.xcrd),y=numeric(row.ycrd);
   // Range checks do not constitute a CRS or point-to-building registration check.
   const plausible=x!==null&&y!==null&&x>=126.7&&x<=127.3&&y>=37.4&&y<=37.75;
+  const lot=String(row.daddr??'').trim().match(/^(산\s*)?\d+(?:-\d+)?(?:번지)?$/);
+  const landAddress=lot&&row.emd_addr?`서울특별시 ${row.sgg_addr} ${row.emd_addr} ${lot[0].replace(/번지$/,'')}`:null;
   return {id:`seoul:${row.apt_cd}`,providerId:row.apt_cd,name:row.apt_nm,district:row.sgg_addr,
-    address:row.apt_rdn_addr||null,addressStatus:row.apt_rdn_addr?'provider-unverified':'missing',
+    address:row.apt_rdn_addr||null,landAddress,addressStatus:row.apt_rdn_addr?'provider-unverified':'missing',
     kind:row.cmpx_clsf||null,buildingCount:numeric(row.whol_dong_cnt),households:numeric(row.tnohsh),
     tenure:row.hh_type||null,approvalValue:row.use_aprv_ymd??null,providerStatus:row.use_yn||null,
     point:plausible?[x,y]:null,rawCoordinates:[row.xcrd??null,row.ycrd??null],

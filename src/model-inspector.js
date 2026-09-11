@@ -112,7 +112,7 @@ export class ModelInspector {
     this.selected = building;
     const o = this.outlook;
     $('#review-building-name').textContent = building.label;
-    $('#review-building-facts').textContent = `OSM #${building.id} · 높이 ${building.height}m (${building.heightSource === 'osm-height' ? '지도 높이 태그' : building.heightSource === 'assumed' ? '용도별 가정' : '층수 환산'}) · ${building.nameSource === 'missing' ? '이름 자료 없음' : building.nameSource === 'osm-name-and-site-containment' ? '단지명은 부지 포함으로 추정' : '이름은 지도 태그'}`;
+    $('#review-building-facts').textContent = `OSM #${building.id} · 높이 ${building.height}m (${building.heightSource === 'official-building-register' ? '건축HUB 건축물대장' : building.heightSource === 'osm-height' ? '지도 높이 태그' : building.heightSource === 'assumed' ? '용도별 가정' : '층수 환산'}) · ${building.nameSource === 'missing' ? '이름 자료 없음' : building.nameSource === 'osm-name-and-site-containment' ? '단지명은 부지 포함으로 추정' : '이름은 지도 태그'}`;
     if (building.baseSource) $('#review-building-facts').textContent += ` · 지반 ${building.base.toFixed(1)}m (수치지도 보간, 1층 표고 미검증)`;
     if (building.geometrySource) $('#review-building-facts').textContent += ' · 외곽선/층수: 2025 수치지도, 층고 2.9m 가정';
     if (building.facadeEvidence) $('#review-building-facts').textContent += ` · 창 외관: ${building.facadeEvidence.description}`;

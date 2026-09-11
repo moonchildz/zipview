@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { models } from './models.js';
+import {wallSegments,openingOnWall,windowPose} from './plan-models.js';
 
 export class ApartmentScene {
-  constructor(host) {
+  constructor(host, {onWindow} = {}) {
     this.host = host;
+    this.onWindow = onWindow;
+    this.windowMeshes = [];
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color('#e9eeed');
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.05, 150);
@@ -42,6 +44,7 @@ export class ApartmentScene {
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(host);
     this.renderer.domElement.addEventListener('pointerdown', e => {
+      this.clickStart = [e.clientX, e.clientY];
       if (!this.interior) return;
       this.drag = [e.clientX, e.clientY];
       this.renderer.domElement.setPointerCapture(e.pointerId);
@@ -53,7 +56,17 @@ export class ApartmentScene {
       this.drag = [e.clientX, e.clientY];
       this.look();
     });
-    for (const event of ['pointerup', 'pointercancel']) this.renderer.domElement.addEventListener(event, () => { this.drag = null; });
+    this.renderer.domElement.addEventListener('pointerup', e => {
+      this.drag = null;
+      if (!this.clickStart || Math.hypot(e.clientX-this.clickStart[0],e.clientY-this.clickStart[1])>5) return;
+      this.clickStart = null;
+      const box=this.renderer.domElement.getBoundingClientRect(),ray=new THREE.Raycaster();
+      ray.setFromCamera(new THREE.Vector2((e.clientX-box.left)/box.width*2-1,1-(e.clientY-box.top)/box.height*2),this.camera);
+      // A nearer opaque wall must not select a window on the other side of it.
+      const hit=ray.intersectObjects(this.group.children).find(h=>h.object.material!==this.glassMaterial||h.object.userData.windowId);
+      if(hit?.object.userData.windowId)this.onWindow?.(hit.object.userData.windowId);
+    });
+    this.renderer.domElement.addEventListener('pointercancel',()=>{this.drag=null;this.clickStart=null;});
     this.renderer.setAnimationLoop(() => {
       if (host.clientWidth === 0 || host.clientHeight === 0) return;
       if (!this.interior) this.controls.update();
@@ -82,17 +95,23 @@ export class ApartmentScene {
     mesh.castShadow = material !== this.glassMaterial;
     mesh.receiveShadow = true;
     this.group.add(mesh);
+    return mesh;
   }
 
-  build(type, cut = true) {
-    this.type = type;
-    this.model = models[type];
+  build(model, cut = true) {
+    this.model = model;
+    this.type = model?.type;
+    this.windowMeshes = [];
+    delete this.host.dataset.window;
+    delete this.host.dataset.cameraPosition;
     while (this.group.children.length) {
       const child = this.group.children[0];
       child.geometry?.dispose();
       this.group.remove(child);
     }
     if (!this.model) return false;
+    this.host.dataset.model = this.model.id;
+    this.host.dataset.scaleSource = this.model.scaleSource;
     const height = cut ? 1.05 : this.model.height;
     const shape = new THREE.Shape(this.model.outline.map(p => { const [x, z] = this.point(p); return new THREE.Vector2(x, -z); }));
     const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.12, bevelEnabled: false });
@@ -101,32 +120,34 @@ export class ApartmentScene {
     floor.position.y = -0.12;
     floor.receiveShadow = true;
     this.group.add(floor);
-    for (let i = 0; i < this.model.outline.length; i++) {
-      const a = this.model.outline[i], b = this.model.outline[(i + 1) % this.model.outline.length];
+    for (const [a,b] of wallSegments(this.model)) {
       const dx = b[0] - a[0], dy = b[1] - a[1], len2 = dx * dx + dy * dy;
-      const t = p => ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2;
-      const on = p => Math.abs((p[0] - a[0]) * dy - (p[1] - a[1]) * dx) < 0.01 && t(p) >= 0 && t(p) <= 1;
-      const windows = this.model.windows.filter(w => on(w.a) && on(w.b)).map(w => ({ ...w, t1: Math.min(t(w.a), t(w.b)), t2: Math.max(t(w.a), t(w.b)) })).sort((x, y) => x.t1 - y.t1);
+      const windows = this.model.windows.map(w=>openingOnWall(w,a,b)).filter(Boolean).sort((x,y)=>x.t1-y.t1);
       const at = f => [a[0] + dx * f, a[1] + dy * f];
       let cursor = 0;
       for (const w of windows) {
         this.beam(at(cursor), at(w.t1), 0, height, this.wallMaterial);
-        this.beam(at(w.t1), at(w.t2), 0, 0.4, this.wallMaterial);
-        this.beam(at(w.t1), at(w.t2), 0.4, Math.min(height, 2.1) - 0.4, this.glassMaterial, 0.035);
-        this.beam(at(w.t1), at(w.t2), 0.4, 0.045, this.frameMaterial, 0.09);
-        this.beam(at(w.t1), at(w.t2), Math.min(height, 2.1) - 0.04, 0.04, this.frameMaterial, 0.09);
+        const sill=this.model.vertical?.sill??.4,head=Math.min(height,this.model.vertical?.head??2.1);
+        this.beam(at(w.t1), at(w.t2), 0, Math.min(sill,height), this.wallMaterial);
+        const glass=this.beam(at(w.t1), at(w.t2), sill, head-sill, this.glassMaterial, 0.035);
+        if(glass){glass.userData.windowId=w.id;this.windowMeshes.push(glass);}
+        this.beam(at(w.t1), at(w.t2), sill, 0.045, this.frameMaterial, 0.09);
+        this.beam(at(w.t1), at(w.t2), head-0.04, 0.04, this.frameMaterial, 0.09);
         const mid = at((w.t1 + w.t2) / 2);
-        this.beam([mid[0] - 1, mid[1]], [mid[0] + 1, mid[1]], 0.4, Math.min(height, 2.1) - 0.4, this.frameMaterial, 0.06);
-        this.beam(at(w.t1), at(w.t2), 2.1, Math.max(height - 2.1, 0), this.wallMaterial);
+        const half=.025/this.model.scale,unit=[dx,dy].map(v=>v/Math.sqrt(len2));
+        this.beam(mid.map((v,i)=>v-unit[i]*half),mid.map((v,i)=>v+unit[i]*half),sill,head-sill,this.frameMaterial,.06);
+        this.beam(at(w.t1), at(w.t2), head, Math.max(height-head,0), this.wallMaterial);
         cursor = w.t2;
       }
       this.beam(at(cursor), b, 0, height, this.wallMaterial);
     }
-    for (const path of this.model.walls) for (let i = 1; i < path.length; i++) this.beam(path[i - 1], path[i], 0, height, this.wallMaterial);
+    this.host.dataset.openings=String(this.windowMeshes.length);
     return true;
   }
 
   reset() {
+    delete this.host.dataset.window;
+    delete this.host.dataset.cameraPosition;
     this.interior = false;
     this.controls.enabled = true;
     this.camera.fov = 42;
@@ -139,7 +160,7 @@ export class ApartmentScene {
 
   enterRoom(index) {
     const room = this.model.rooms[index];
-    this.build(this.type, false);
+    this.build(this.model, false);
     this.interior = true;
     this.controls.enabled = false;
     const [x, z] = this.point(room.point), [lx, lz] = this.point(room.look);
@@ -149,6 +170,24 @@ export class ApartmentScene {
     this.yaw = Math.atan2(lx - x, lz - z);
     this.pitch = 0;
     this.look();
+  }
+
+  enterWindow(id) {
+    const pose=windowPose(this.model,id);
+    this.build(this.model,false);
+    this.interior=true;
+    this.controls.enabled=false;
+    this.camera.position.fromArray(pose.position);
+    this.camera.fov=70;
+    this.camera.updateProjectionMatrix();
+    this.yaw=Math.atan2(pose.outward[0],pose.outward[1]);
+    this.pitch=0;
+    this.look();
+    this.host.dataset.window=id;
+    this.host.dataset.eyeHeight=String(pose.eyeHeight);
+    this.host.dataset.windowInset=String(pose.insetMeters);
+    this.host.dataset.cameraPosition=pose.position.join(',');
+    return pose;
   }
 
   look() {

@@ -1,7 +1,16 @@
 // Pure, shared address/unit index. Identities are scoped by complex, never by dong alone.
-export const normalizeAddress = value => String(value ?? '').normalize('NFKC').replace(/서울특별시|서울시/g,'서울').replace(/[\s·(),]/g,'').toLowerCase();
+import {normalizeAddress,addressKeys,splitAddressInput} from './address-input.js';
+export {normalizeAddress} from './address-input.js';
 const number = (value,suffix) => String(value ?? '').normalize('NFKC').trim().replace(new RegExp(`${suffix}$`),'').trim().replace(/^0+(?=\d)/,'');
 export const unitKey = (complexId,building,unit) => JSON.stringify([complexId,number(building,'동'),number(unit,'호')]);
+export const planImageCount = plans => new Set(plans.filter(p=>p.available).map(p=>p.file??`${p.complexId}/${p.id}`)).size;
+
+export function providerComplexTarget(complexes,provider){
+  const known=complexes.find(c=>c.kbId===provider.providerId||c.id===`kb:${provider.providerId}`);
+  if(known)return known;
+  const matches=complexes.filter(c=>provider.address&&normalizeAddress(c.address)===normalizeAddress(provider.address));
+  return matches.length===1&&!matches[0].kbId?matches[0]:null;
+}
 
 export function compileLinkage({complexes,buildings=[],plans=[],units=[],lineAssociations=[],assets=[],inputs=[]}) {
   const unique = (rows,key,label) => {const m=new Map();for(const r of rows){const k=key(r);if(m.has(k))throw new Error(`Duplicate ${label}: ${k}`);m.set(k,r);}return m;};
@@ -45,7 +54,9 @@ export function compileLinkage({complexes,buildings=[],plans=[],units=[],lineAss
     ...linked.filter(u=>u.gaps.length).map(u=>({kind:'unit-gaps',key:u.key,gaps:u.gaps}))];
   for(const r of lineAssociations)if(!cs.has(r.complexId)||!r.source||!Number.isInteger(r.line)||r.line<1||r.line>99||!ps.has(`${r.complexId}/${r.planId}`))throw new Error('Invalid image line association');
   return {version:1,complexes,buildings,plans,units:linked,lineAssociations,assets,inputs,issues,
-    coverage:{complexes:complexes.length,buildings:buildings.length,plans:plans.length,planImages:plans.filter(p=>p.available).length,assets:assets.length,
+    coverage:{complexes:complexes.length,buildings:buildings.length,plans:plans.length,planImages:planImageCount(plans),assets:assets.length,
+      complexesWithPlanImages:new Set(plans.filter(p=>p.available).map(p=>p.complexId)).size,
+      complexesWithUnitLinks:new Set(linked.filter(u=>!u.scenario&&u.status!=='conflict').map(u=>u.complexId)).size,
       unitAssociations:linked.filter(u=>!u.scenario&&u.status!=='conflict').length,
       imageLineCandidates:lineAssociations.length,
       scenarios:linked.filter(u=>u.scenario).length,conflicts:linked.filter(u=>u.status==='conflict').length,
@@ -55,23 +66,27 @@ export function compileLinkage({complexes,buildings=[],plans=[],units=[],lineAss
 
 export function createUnitIndex(catalog){
   const aliases=new Map(),units=new Map(catalog.units.map(u=>[u.key,u]));
-  for(const c of catalog.complexes)for(const alias of [c.id,c.providerId,c.name,c.address,...(c.aliases??[])]){
-    const key=normalizeAddress(alias);if(!key)continue;
+  for(const c of catalog.complexes)for(const alias of [c.id,c.providerId,c.name,c.address,c.landAddress,...(c.aliases??[])])for(const key of addressKeys(alias)){
     if(!aliases.has(key))aliases.set(key,new Set());aliases.get(key).add(c.id);
   }
   const cs=new Map(catalog.complexes.map(c=>[c.id,c]));
-  return {search(text){const q=normalizeAddress(text);return catalog.complexes.filter(c=>[c.id,c.name,c.address,...(c.aliases??[])].some(s=>normalizeAddress(s).includes(q)));},
+  return {search(text){const q=normalizeAddress(text);return catalog.complexes.filter(c=>[c.id,c.name,c.address,c.landAddress,...(c.aliases??[])].some(s=>normalizeAddress(s).includes(q)));},
     resolve(address,building,unit){
-      const ids=[...(aliases.get(normalizeAddress(address))??[])];
+      let request;try{request=splitAddressInput(address);}catch{return {status:'invalid-address',viewReady:false};}
+      if((request.building&&building&&number(request.building,'동')!==number(building,'동'))||(request.unit&&unit&&number(request.unit,'호')!==number(unit,'호')))return {status:'invalid-input',viewReady:false};
+      address=request.address;building=request.building??building;unit=request.unit??unit;
+      const exact=aliases.get(normalizeAddress(address));
+      const ids=[...(exact??new Set(addressKeys(address).flatMap(key=>[...(aliases.get(key)??[])])))];
       if(ids.length!==1)return {status:ids.length?'ambiguous-address':'address-not-registered',candidates:ids.map(id=>cs.get(id)),viewReady:false};
       const complex=cs.get(ids[0]),b=number(building,'동'),u=number(unit,'호');
       const availablePlans=catalog.plans.filter(p=>p.complexId===complex.id);
       if(!b&&!u)return {status:'complex-found',complex,availablePlans,viewReady:false};
       const phase=String(address).match(/([1-9])\s*단지/);
       if(phase&&complex.phaseBuildings?.[phase[1]]&&!complex.phaseBuildings[phase[1]].includes(b))return {status:'building-unlinked',complex,building:b,unit:u,availablePlans,viewReady:false,gaps:['phase-building-mismatch']};
-      if(!/^\d+$/.test(b)||!/^\d{3,5}$/.test(u)||Number(u)%100===0)return {status:'invalid-input',complex,viewReady:false};
+      if(!/^\d+$/.test(b)||!/^\d{3,5}$/.test(u)||Number(u)%100===0)return {status:'invalid-input',complex,availablePlans,viewReady:false};
       const match=units.get(unitKey(complex.id,b,u));
       if(match)return {...match,complex,availablePlans};
+      if(complex.officialInventory?.complete)return {status:'unit-not-found',complex,building:b,unit:u,availablePlans,viewReady:false,gaps:['unit-absent-from-complete-inventory']};
       const known=catalog.buildings.find(r=>r.complexId===complex.id&&r.building===b);
       if(known?.geometry?.levels&&Math.floor(Number(u)/100)>known.geometry.levels)return {status:'unit-unlinked',complex,building:b,unit:u,availablePlans,viewReady:false,gaps:['floor-above-building-levels']};
       const lines=(catalog.lineAssociations??[]).filter(r=>r.complexId===complex.id&&r.building===b&&r.line===Number(u)%100);

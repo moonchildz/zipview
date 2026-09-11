@@ -1,7 +1,7 @@
 import './style.css';
 import {requestedXiUnit} from './xi-unit-registry.js';
 import {mountXiSearch} from './xi-search.js';
-const result=requestedXiUnit();mountXiSearch(result);
+const result=await requestedXiUnit();mountXiSearch(result);
 document.title='동·호 조회 결과 | 집과 전망';
 document.querySelector('.search-section h1').textContent='동·호로 조회';
 document.querySelector('.unit-section').hidden=true;document.querySelector('.plan-section').hidden=true;

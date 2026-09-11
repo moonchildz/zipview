@@ -7,10 +7,12 @@ test('real adapters link every transcribed unit, retain missing files, and rebui
   execFileSync(process.execPath,['scripts/build-linkage.mjs'],{stdio:'pipe'});
   const path='research/linkage/generated/catalog.json',first=readFileSync(path,'utf8'),c=JSON.parse(first),index=createUnitIndex(c);
   assert.equal(c.units.filter(u=>u.complexId==='seoul-daebang-planned').length,283);
-  assert.equal(c.units.filter(u=>u.complexId==='sinchon-prugio'&&!u.scenario&&u.source==='research/sinchon-prugio/README.md').length,22);
-  assert.equal(c.units.filter(u=>u.complexId==='gyeonghuigung-xi').length,102);
+  const corroboratedComparisons=c.units.filter(u=>u.complexId==='sinchon-prugio'&&u.comparisonPreset).length;
+  assert.equal(c.units.filter(u=>u.complexId==='sinchon-prugio'&&!u.scenario&&u.source==='research/sinchon-prugio/README.md').length,22+corroboratedComparisons);
+  const xiInventory=c.complexes.find(c=>c.id==='gyeonghuigung-xi').officialInventory;
+  assert.equal(c.units.filter(u=>u.complexId==='gyeonghuigung-xi').length,xiInventory?.complete?1148:102);
   assert.equal(index.resolve('경희궁자이 2단지','211','1201').geometry.id,608374573);
-  assert.equal(index.resolve('경희궁자이 2단지','211','1207').status,'unit-unlinked');
+  assert.equal(index.resolve('경희궁자이 2단지','211','1207').status,xiInventory?.complete?'unit-not-found':'unit-unlinked');
   assert.equal(index.resolve('서울대방','101','202').status,'unit-unlinked');
   assert.equal(index.resolve('신촌푸르지오2단지','102','201').status,'building-unlinked');
   assert.ok(c.units.every(u=>!u.viewReady&&!u.verified));

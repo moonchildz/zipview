@@ -6,16 +6,12 @@ import {pathToFileURL} from 'node:url';
 import {parseArgs} from 'node:util';
 import {extractPublicComplex,parseSearch,parseDongList,parseHoList} from './kb-public-source.mjs';
 import {normalizeAddress} from '../src/unit-linkage.js';
+import {splitAddressInput} from '../src/address-input.js';
+export {splitAddressInput} from '../src/address-input.js';
 
 const ROOT='research/linkage',CACHE=`${ROOT}/cache`,PROVIDERS=`${ROOT}/providers/kb`;
 const hash=s=>createHash('sha256').update(s).digest('hex');
 async function saveJSON(path,value){await mkdir(resolve(path,'..'),{recursive:true});await writeFile(path+'.tmp',JSON.stringify(value,null,2)+'\n');await rename(path+'.tmp',path);}
-export function splitAddressInput(input){
-  const text=String(input??'').normalize('NFKC').trim();
-  if(!text||text.length>200||/[\x00-\x1f]/.test(text))throw new Error('주소는 1~200자의 한 줄로 입력해 주세요.');
-  const match=text.match(/^(.*?)\s+(\d+)동\s*(\d{3,5})호\s*$/);
-  return match?{address:match[1].trim(),building:match[2],unit:match[3]}:{address:text};
-}
 export function chooseCandidate(query,search){
   const q=normalizeAddress(query),matches=search.candidates.filter(c=>[c.name,c.address,c.landAddress].some(v=>normalizeAddress(v)===q));
   if(matches.length===1&&search.total<=search.candidates.length)return matches[0];

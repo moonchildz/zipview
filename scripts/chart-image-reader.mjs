@@ -76,5 +76,29 @@ export async function readColorChart(image,profile){
     if(near&&new Set(same.map(x=>x.contrast)).size>=2)accepted.push({...same.sort((a,b)=>b.templateSimilarity-a.templateSimilarity)[0],votes:same.length});
     else rejected.push({...r,reason:'duplicate-or-unstable-line-detection'});
   }
+  const marked=new Set();
+  for(const [building,line,x,y] of profile.reviewedLineMarkers??[]){
+    const key=`${building}:${line}`;
+    if(marked.has(key)||!profile.panels.some(p=>p.building===building)||!Number.isInteger(line)||line<1||line>99||![x,y].every(Number.isInteger)||x<4||y<4||x>=info.width-4||y>=info.height-4)throw new Error('Invalid reviewed line marker');
+    marked.add(key);
+    const votes=new Map();
+    for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){
+      const ranked=palette.map(p=>({type:p.type,d:distance(rgb(x+dx,y+dy),p.rgb)})).sort((a,b)=>a.d-b.d);
+      if(ranked[0].d<35&&ranked[1].d-ranked[0].d>6)votes.set(ranked[0].type,(votes.get(ranked[0].type)??0)+1);
+    }
+    const ranked=[...votes].sort((a,b)=>b[1]-a[1]),total=[...votes.values()].reduce((a,b)=>a+b,0);
+    if(!ranked.length||ranked[0][1]<12||ranked[0][1]/total<.8){rejected.push({building,line,box:[x-4,y-4,9,9],reason:'reviewed-marker-color-ambiguous',votes:Object.fromEntries(votes)});continue;}
+    const record={building,line,type:ranked[0][0],box:[x-4,y-4,9,9],colorPixels:ranked[0][1],samplePixels:81,
+      method:'manually-reviewed-line-number-and-source-color',verified:false};
+    const previous=accepted.find(r=>r.building===building&&r.line===line);
+    if(previous&&previous.type!==record.type)throw new Error(`Reviewed marker conflicts with glyph result: ${key}`);
+    if(!previous)accepted.push(record);
+  }
+  for(const [building,line,reason] of profile.unresolvedLineMarkers??[]){
+    if(marked.has(`${building}:${line}`))throw new Error('Line cannot be both reviewed and unresolved');
+    const index=accepted.findIndex(r=>r.building===building&&r.line===line);
+    if(index>=0)accepted.splice(index,1);
+    rejected.push({building,line,reason});
+  }
   return {lines:accepted,rejected,regions,palette,templates};
 }

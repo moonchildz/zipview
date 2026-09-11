@@ -7,6 +7,8 @@ import { buildFacades } from './facades.js';
 import { ModelInspector } from './model-inspector.js';
 import { terrainGeometries } from './terrain-mesh.js';
 import { bindGroundImagery } from './ground-imagery.js';
+import { applyOfficialBuildingFacts } from './official-buildings.js';
+import officialSites from '../research/linkage/generated/target-sites.json';
 import './ground-imagery.css';
 
 export class OutlookScene {
@@ -57,7 +59,6 @@ export class OutlookScene {
     const response = await fetch(this.options.sceneUrl ?? '/research/sinchon-prugio/outlook/scene.json');
     if (!response.ok) throw new Error('전망 데이터 파일을 불러오지 못했습니다.');
     this.data = await response.json();
-    this.options.prepareData?.(this.data);
     const original = new URLSearchParams(location.search).get('terrain') === 'original';
     const correctionResponse = original || this.options.correction === false ? null : await fetch('/research/sinchon-prugio/outlook/mapinfo-correction.json');
     if (correctionResponse && !correctionResponse.ok) throw new Error('수치지도 보정 데이터를 불러오지 못했습니다.');
@@ -67,6 +68,8 @@ export class OutlookScene {
       const overrides = new Map(correction.buildings.map(b => [b.id, b]));
       for (const building of this.data.buildings) Object.assign(building, overrides.get(building.id) ?? {});
     }
+    this.host.dataset.officialBuildings=String(applyOfficialBuildingFacts(this.data,officialSites));
+    this.options.prepareData?.(this.data);
     const note = document.querySelector('#terrain-source');
     note.replaceChildren(document.createTextNode(correction ? `수치지도 보정 적용: ${correction.status} ` : '보정 전 OSM·기존 지형 모델 '));
     const comparison = document.createElement('a');

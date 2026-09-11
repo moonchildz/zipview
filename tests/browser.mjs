@@ -16,7 +16,7 @@ try {
     await mockGroundImagery(page);
     page.on('pageerror', e => errors.push(e.message));
     page.on('response', r => { if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`); });
-    await page.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:5174', { waitUntil: 'networkidle' });
+    await page.goto((process.env.TEST_BASE_URL||'http://127.0.0.1:5174')+'/?site=sinchon', { waitUntil: 'networkidle' });
     assert.equal(await page.locator('#unit-title').textContent(), '206동 504호');
     await page.waitForSelector('#outlook-host[data-ready="true"]');
     const outlook = page.locator('#outlook-host');
@@ -158,12 +158,17 @@ try {
     await page.locator('#building').selectOption('201');
     await page.locator('#unit').fill('1404');
     await page.getByRole('button', { name: '세대 조회', exact: true }).click();
+    await page.waitForSelector('#selected-plan img');
+    assert.match(await page.locator('#linkage-result').innerText(),/연결 타입: 84A/);
+    await page.getByRole('link',{name:'연결된 데모 보기'}).click();
+    await page.waitForFunction(()=>document.querySelector('#unit-title')?.textContent==='201동 1404호');
     assert.equal(await page.locator('#type-value').textContent(), '84A');
     await page.screenshot({ path: `${output}/84A-${viewport.width}.png`, fullPage: true });
     await page.locator('#unit').fill('9999');
     await page.getByRole('button', { name: '세대 조회', exact: true }).click();
-    assert.ok(await page.locator('#lookup-error').isVisible());
-    assert.equal(await page.locator('#unit-title').textContent(), '84A 타입 열람');
+    await page.waitForSelector('#linkage-result[data-status="unit-unlinked"]');
+    assert.equal(await page.getByRole('link',{name:'연결된 데모 보기'}).count(),0);
+    await page.goto((process.env.TEST_BASE_URL||'http://127.0.0.1:5174')+'/?site=sinchon&building=201&unit=1404',{waitUntil:'networkidle'});
     for (const type of ['59D', '84A', '84B', '84C', '84D', '84E', '109A', '109B']) {
       await page.locator(`[data-type="${type}"]`).click();
       await page.getByRole('tab', { name: '평면도', exact: true }).click();

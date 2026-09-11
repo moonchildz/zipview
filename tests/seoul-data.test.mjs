@@ -6,6 +6,10 @@ import {normalizeComplex,normalizeComplexes,normalizeEnvironment,metersTag,geome
 import {validateDownload} from '../scripts/collect-seoul.mjs';
 
 const row={apt_cd:'A1',apt_nm:'Test',sgg_addr:'종로구',xcrd:'126.98',ycrd:'37.57',hh_type:'분양',apt_rdn_addr:'서울특별시 종로구 테스트',whol_dong_cnt:'3',tnohsh:'100',phone:'private',insurance_id:'private'};
+test('lot aliases use only complete numeric lot fields, not unstructured address notes',()=>{
+  assert.equal(normalizeComplex({...row,emd_addr:'내수동',daddr:'72번지'}).landAddress,'서울특별시 종로구 내수동 72');
+  for(const daddr of ['관리사무소','72번지 담당자','아파트명',null])assert.equal(normalizeComplex({...row,emd_addr:'내수동',daddr}).landAddress,null);
+});
 test('Seoul normalization preserves unknown coordinates and excludes unrelated personal fields',()=>{
   const c=normalizeComplex(row);
   assert.deepEqual(c.point,[126.98,37.57]);assert.equal(c.tenure,'분양');assert.equal(c.type,undefined);

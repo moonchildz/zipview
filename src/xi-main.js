@@ -9,7 +9,7 @@ import {requestedXiUnit} from './xi-unit-registry.js';
 import {mountXiSearch} from './xi-search.js';
 import {xiOpeningCandidates} from './xi-unit-layout.js';
 
-const selection=requestedXiUnit(),dong=selection.building,type=selection.planId;
+const selection=await requestedXiUnit(),dong=selection.building,type=selection.planId;
 
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
@@ -20,9 +20,9 @@ $('.search-section h1').textContent='경희궁자이 2단지';
 mountXiSearch(selection);
 $('.examples').replaceChildren();
 const previous=document.createElement('a');previous.href='/';previous.textContent='신촌푸르지오 결과로 이동';$('.examples').append(previous);
-$('#selection-kind').textContent='호수 배치 판독 후보';
-$('#type-value').textContent=`${type} 후보`;$('#area-value').textContent=`전용 ${selection.exclusiveArea}㎡`;
-$('#match-status').textContent='1·2라인 배치 판독 · 창 좌표 추정';
+$('#selection-kind').textContent=selection.status.startsWith('official-')?'국토부 호별 자료':'호수 배치 판독 후보';
+$('#type-value').textContent=type;$('#area-value').textContent=`전용 ${selection.exclusiveArea}㎡`;
+$('#match-status').textContent='호별 타입 연결 · 창 좌표 추정';
 $('.unit-section .data-note').textContent=`공급 ${selection.supplyArea}㎡ · 약 ${(selection.supplyArea/3.305785).toFixed(1)}평. 준공 평면·창 위치는 미검증입니다.`;
 $('.plan-section').hidden=true;
 $('.source-section').replaceChildren();
@@ -46,7 +46,7 @@ $('#window-warning').textContent=`시점이 ${dong}동 건물 안에 있습니�
 for(const a of $$('a'))if(a.href.includes('kbland'))a.remove();
 const floors=[selection.floor,Math.min(selection.floor+5,selection.lastFloor)];
 for(const [id,floor] of [['floor-a',floors[0]],['floor-b',floors[1]]]){
-  for(let i=selection.firstFloor;i<=selection.lastFloor;i++)$('#'+id).add(new Option(`${i}층`,i));$('#'+id).value=floor;
+  for(const i of selection.availableFloors??Array.from({length:selection.lastFloor-selection.firstFloor+1},(_,n)=>selection.firstFloor+n))$('#'+id).add(new Option(`${i}층`,i));$('#'+id).value=floor;
 }
 $('.model-review').open=false;$('.direction-locator').open=false;
 $('label[for="view-fov"]').textContent='가로 시야각';$('#view-fov').max=75;
@@ -67,11 +67,21 @@ const outlook=new OutlookScene($('#outlook-host'),(state,elevations)=>{
   const line=Number($('#outlook-host').dataset.unitLine||1);
   const opening=$('#outlook-host').dataset.openingName||'거실';
   const unit=state.floors[0]*100+line;
-  for(const option of $$('#xi-line option'))option.textContent=`${option.value}라인 · ${state.floors[0]*100+Number(option.value)}호 후보`;
-  $('#unit').value=unit;$('#unit-title').textContent=`${dong}동 ${unit}호 후보`;
+  if(selection.unitNumbers)for(const [i,key] of ['a','b'].entries()){
+    const allowed=selection.unitNumbers.filter(u=>Number(u)%100===line).map(u=>Math.floor(Number(u)/100)).sort((a,b)=>a-b);
+    const select=$(`#floor-${key}`);
+    if([...select.options].map(o=>o.value).join(',')!==allowed.join(','))select.replaceChildren(...allowed.map(f=>new Option(`${f}층`,f)));
+    select.value=String(state.floors[i]);
+  }
+  for(const option of $$('#xi-line option')){
+    const unit=String(state.floors[0]*100+Number(option.value));
+    option.textContent=`${option.value}라인 · ${unit}호`;
+    option.disabled=!!selection.unitNumbers&&!state.floors.every(f=>selection.unitNumbers.includes(String(f*100+Number(option.value))));
+  }
+  $('#unit').value=unit;$('#unit-title').textContent=`${dong}동 ${unit}호`;
   $('#viewer-title').textContent=outlook.interior?.active?`${dong}동 · 집 안에서 보기`:`${dong}동 · ${opening}`;
   for(const [i,key] of ['a','b'].entries()){
-    $(`#label-${key}`).textContent=`${state.floors[i]*100+line}호 후보 · ${outlook.interior?.active?'실내 관찰점':opening}`;
+    $(`#label-${key}`).textContent=`${state.floors[i]*100+line}호 · ${outlook.interior?.active?'실내 관찰점':opening}`;
     $(`#elevation-${key}`).textContent=`눈높이 표고 추정 ${elevations[i].toFixed(1)}m`;
   }
   $('#height-delta').textContent=`높이 차 ${Math.abs(elevations[1]-elevations[0]).toFixed(1)}m`;
@@ -86,6 +96,7 @@ const outlook=new OutlookScene($('#outlook-host'),(state,elevations)=>{
     const opening=xiOpeningCandidates(target,data.center,{line:selection.line}).find(w=>w.id==='living');
     data.window={lon:opening.lon,lat:opening.lat,bearing:opening.bearing};data.previousWindow={...data.window};
   },correction:false,initialLine:selection.line,
+  isValidLine:selection.unitNumbers?(line,floors)=>floors.every(f=>selection.unitNumbers.includes(String(f*100+line))):null,
   floors,horizontalFov:true,fov:50,pitch:0,label:'선택한 창 후보에서 두 층의 전망 비교',
   sourceNote:`${dong}동 ${selection.unit}호 → ${type} · 동호 배치·타입 자료 연결 후보 · 준공 치수·층별 예외 미검증`});
 
@@ -111,7 +122,7 @@ try {
   Object.assign($('#outlook-host').dataset,{selectedBuilding:dong,planId:type,lookupStatus:selection.status});
   $('#outlook-host').dataset.complexFacades=JSON.stringify(outlook.data.facadeCoverage);
   $('#outlook-loading').hidden=true;
-  $('#dataset-stats').textContent=`${dong}동 OSM 원본: 최고 ${outlook.target.levels}층·${outlook.target.height}m. ${type} 부분: ${outlook.target.parts[1].levels}층·${outlook.target.parts[1].height.toFixed(1)}m 후보. 지반 ${outlook.target.base.toFixed(1)}m 추정. 상가층·옹벽·수목 미검증.`;
+  $('#dataset-stats').textContent=`${dong}동 ${outlook.target.heightSource==='official-building-register'?'건축물대장':'OSM 자료'}: 최고 ${outlook.target.levels}층·${outlook.target.height}m. ${type} 부분: ${outlook.target.parts[1].levels}층·${outlook.target.parts[1].height.toFixed(1)}m 후보. 지반 ${outlook.target.base.toFixed(1)}m 추정. 상가층·옹벽·수목 미검증.`;
 } catch(e) {
   $('#outlook-loading').textContent=`전망 로딩 실패: ${e.message}`;console.error(e);
 }
