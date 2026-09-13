@@ -13,7 +13,7 @@ for(const site of catalog.targetSites??[]){
     const rows=units.map(u=>{
       const r=index.resolve(site.address,u.building,u.unit),home=homeSelection(r);
       const image=!!r.plan?.available&&!home.error;
-      const model=image?modelForPlan(r.plan):null;
+      const model=image?modelForPlan(r.plan,{building:r.building}):null;
       const localOpenings=model?model.windows.map(w=>windowPose(model,w.id)):[];
       if(r.key!==u.key)failures.push({building:u.building,unit:u.unit,reason:'unreachable-unit'});
       return {unit:u.unit,type:home.type??null,planImage:image,structureRoute:!!(r.planPreview||r.preview),

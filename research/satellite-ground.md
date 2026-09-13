@@ -1,5 +1,27 @@
 # Satellite ground rendering
 
+## Current default — 2026-09-14 KST
+
+The default is now **Maps Static API, zoom 18, size 640×640, scale 2**
+(1280×1280 output). The image is centered on the selected building's footprint
+in geographic coordinates, including complexes beyond the original three pilots.
+The client uses `/api/imagery/static/metadata` and `/api/imagery/static/image`
+with validated longitude, latitude and zoom. Metadata is calculated locally;
+loading an image makes one billable provider request. The old tile endpoints
+remain available for comparison but are not the default.
+
+At Seoul latitude one image spans approximately 303m, so far-away terrain uses
+the plain ground material color. Zoom 18 does not cover the old 2km tile viewport.
+The original image remains complete, with an original-image attribution link.
+Floor/window/visibility changes reuse the texture in memory. Errors retain the
+plain ground and allow an explicit retry; there is no automatic low-resolution
+fallback, disk cache, citywide prefetch or tree/facility extraction pipeline.
+Enable **Maps Static API** on the server-side key; Map Tiles permission alone
+does not enable this product. This remains a development/preview proxy.
+
+See [API verification, prices and usage limitations](GOOGLE-IMAGERY-OPTIONS.md).
+Earlier implementation details below describe the prior Map Tiles default.
+
 Implemented 2026-09-10 for Sinchon Prugio and Gyeonghuigung Xi.
 
 ## Status

@@ -84,7 +84,7 @@ export class ModelInspector {
       const button = this.buttons[index][indexInPool++]; button.building = building;
       button.dataset.buildingId = building.id;
       button.textContent = building.label;
-      button.title = `${building.label} · OSM #${building.id} · 높이 ${building.height}m (${building.heightSource})`;
+      button.title = `${building.label} · ${typeof building.id==='number'?'OSM':'수치지도'} #${building.id} · 높이 ${building.height}m (${building.heightSource})`;
       button.style.cssText = `left:${left}px;top:${top}px;width:${labelWidth}px`;
       button.hidden = false; occupied.push({left,top});
     }
@@ -112,9 +112,9 @@ export class ModelInspector {
     this.selected = building;
     const o = this.outlook;
     $('#review-building-name').textContent = building.label;
-    $('#review-building-facts').textContent = `OSM #${building.id} · 높이 ${building.height}m (${building.heightSource === 'official-building-register' ? '건축HUB 건축물대장' : building.heightSource === 'osm-height' ? '지도 높이 태그' : building.heightSource === 'assumed' ? '용도별 가정' : '층수 환산'}) · ${building.nameSource === 'missing' ? '이름 자료 없음' : building.nameSource === 'osm-name-and-site-containment' ? '단지명은 부지 포함으로 추정' : '이름은 지도 태그'}`;
+    $('#review-building-facts').textContent = `${typeof building.id==='number'?'OSM':'수치지도'} #${building.id} · 높이 ${building.height}m (${building.heightSource === 'official-building-register' ? '건축HUB 건축물대장' : building.heightSource === 'osm-height' ? '지도 높이 태그' : building.heightSource === 'assumed' ? '용도별 가정' : '층수 환산'}) · ${building.nameSource === 'missing' ? '이름 자료 없음' : building.nameSource === 'osm-name-and-site-containment' ? '단지명은 부지 포함으로 추정' : '원자료 동 명칭'}`;
     if (building.baseSource) $('#review-building-facts').textContent += ` · 지반 ${building.base.toFixed(1)}m (수치지도 보간, 1층 표고 미검증)`;
-    if (building.geometrySource) $('#review-building-facts').textContent += ' · 외곽선/층수: 2025 수치지도, 층고 2.9m 가정';
+    if (building.geometrySource) $('#review-building-facts').textContent += building.geometryStatus==='source-reviewed-estimate'?' · 배치도 대조 외곽 보정 · 준공 외곽 검증 전':' · 외곽선: 2025 수치지도';
     if (building.facadeEvidence) $('#review-building-facts').textContent += ` · 창 외관: ${building.facadeEvidence.description}`;
     $('#review-building-source').href = building.source;
     const [x,z] = centerPoint(building.points), geo = geographicPoint(x,z,o.data.center), links = mapLinks(geo.lon,geo.lat,o.state.bearing);
@@ -130,7 +130,7 @@ export class ModelInspector {
       for(const source of sources)this.outline.add(new THREE.LineSegments(new THREE.EdgesGeometry(source.geometry),new THREE.LineBasicMaterial({color:'#ed952e'})));
       o.scene.add(this.outline);
     }
-    document.querySelectorAll('#review-map [data-building-id]').forEach(el => el.classList.toggle('selected',Number(el.dataset.buildingId)===building.id));
+    document.querySelectorAll('#review-map [data-building-id]').forEach(el => el.classList.toggle('selected',el.dataset.buildingId===String(building.id)));
     o.render();
   }
 
@@ -178,8 +178,10 @@ export class ModelInspector {
       if(this.roads.some(road=>road.id===r.id))line.addEventListener('click',()=>{$('#review-road').value=r.id;this.selectRoad(r.id);});
     }
     for(const b of this.outlook.data.buildings.filter(b=>b.points.some(p=>Math.hypot(...p)<350))) {
-      const polygon=add('polygon',{points:b.points.map(p=>p.join(',')).join(' '),'data-building-id':b.id,fill:'#dce4df',stroke:'#7d9587','stroke-width':.8});
+      for(const part of b.parts??[b]){
+      const polygon=add('polygon',{points:part.points.map(p=>p.join(',')).join(' '),'data-building-id':b.id,fill:'#dce4df',stroke:'#7d9587','stroke-width':.8});
       const title=document.createElementNS(ns,'title');title.textContent=b.label;polygon.append(title);polygon.addEventListener('click',()=>this.selectBuilding(b));
+      }
     }
     add('path',{id:'review-camera-arrow',fill:'none',stroke:'#166e60','stroke-width':3});
     add('text',{x:-235,y:-224,'font-size':14,fill:'#176957'},'N ↑');

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import {wallSegments,openingOnWall,windowPose} from './plan-models.js';
+import {wallSegments,openingOnWall,windowPose,planLocalPoint} from './plan-models.js';
 
 export class ApartmentScene {
   constructor(host, {onWindow} = {}) {
@@ -82,7 +82,7 @@ export class ApartmentScene {
     this.renderer.setSize(width, height);
   }
 
-  point(p) { return [(p[0] - this.model.center[0]) * this.model.scale, (p[1] - this.model.center[1]) * this.model.scale]; }
+  point(p) { return planLocalPoint(this.model,p); }
 
   beam(a, b, bottom, height, material, thickness = 0.15) {
     if (height <= 0) return;
@@ -112,6 +112,7 @@ export class ApartmentScene {
     if (!this.model) return false;
     this.host.dataset.model = this.model.id;
     this.host.dataset.scaleSource = this.model.scaleSource;
+    this.host.dataset.scaleAxes=(this.model.scaleXY??[this.model.scale,this.model.scale]).join(',');
     const height = cut ? 1.05 : this.model.height;
     const shape = new THREE.Shape(this.model.outline.map(p => { const [x, z] = this.point(p); return new THREE.Vector2(x, -z); }));
     const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.12, bevelEnabled: false });
@@ -134,7 +135,8 @@ export class ApartmentScene {
         this.beam(at(w.t1), at(w.t2), sill, 0.045, this.frameMaterial, 0.09);
         this.beam(at(w.t1), at(w.t2), head-0.04, 0.04, this.frameMaterial, 0.09);
         const mid = at((w.t1 + w.t2) / 2);
-        const half=.025/this.model.scale,unit=[dx,dy].map(v=>v/Math.sqrt(len2));
+        const metricLength=Math.hypot(...this.point(b).map((v,i)=>v-this.point(a)[i]));
+        const half=.025*Math.sqrt(len2)/metricLength,unit=[dx,dy].map(v=>v/Math.sqrt(len2));
         this.beam(mid.map((v,i)=>v-unit[i]*half),mid.map((v,i)=>v+unit[i]*half),sill,head-sill,this.frameMaterial,.06);
         this.beam(at(w.t1), at(w.t2), head, Math.max(height-head,0), this.wallMaterial);
         cursor = w.t2;

@@ -3,6 +3,12 @@ export const TARGET_SITES=[
   {id:'gyeonghuigung-xi',name:'경희궁자이 2단지',address:'서울특별시 종로구 송월길 99',siteSource:'https://www.openstreetmap.org/way/359124892',buildings:Array.from({length:14},(_,i)=>String(201+i))},
 ];
 
+// Accept the explicit Korean dong suffix, but never extract arbitrary digits
+// from labels such as a road address or a commercial annex.
+export function buildingNumber(name){
+  return String(name??'').trim().match(/^(\d+)\s*동?$/)?.[1]??null;
+}
+
 export function compileOfficialSites(snapshot){
   return TARGET_SITES.map(site=>{
     const input=snapshot?.targets.find(t=>t.id===site.id&&t.address===site.address),facts=[];
@@ -20,11 +26,12 @@ export function compileOfficialSites(snapshot){
 export function applyOfficialBuildingFacts(scene,sites){
   let applied=0;
   for(const site of sites)for(const fact of site.facts){
-    const matches=scene.buildings.filter(b=>b.siteSource===site.siteSource&&b.name===fact.building);
+    const matches=scene.buildings.filter(b=>b.siteSource===site.siteSource&&buildingNumber(b.name)===fact.building);
     if(matches.length>1)throw new Error(`Ambiguous scene building ${site.id}/${fact.building}`);
     const b=matches[0];if(!b)continue;
     b.previousBuildingHeight??={height:b.height,levels:b.levels,source:b.heightSource};
     b.height=fact.height;b.levels=fact.levels;b.heightSource='official-building-register';b.officialBuilding=fact;applied++;
+    for(const part of b.parts??[])if(part.inheritBuildingHeight)Object.assign(part,{height:fact.height,levels:fact.levels,heightSource:b.heightSource});
   }
   return applied;
 }

@@ -1,7 +1,9 @@
 import {sinchonTraces} from './plan-traces/sinchon.js';
+import {sinchonShTraces} from './plan-traces/sinchon-sh.js';
 import {models as legacyModels} from './models.js';
+import {planCalibrations} from './plan-calibrations.js';
 
-export const planTraces=sinchonTraces;
+export const planTraces=[...sinchonTraces,...sinchonShTraces];
 const finitePoint=p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite);
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 export function pointInPlan(p,outline){
@@ -50,19 +52,24 @@ export function validatePlanTrace(trace){
   if(trace.dimension&&(!trace.dimension.pixels?.every(valid)||!Number.isFinite(trace.dimension.meters)||trace.dimension.meters<=0||distance(...trace.dimension.pixels)<1))errors.push('invalid-dimension');
   return errors;
 }
-export function traceModel(trace){
+export function traceModel(trace,calibration=null){
   const xs=trace.outline.map(p=>p[0]),ys=trace.outline.map(p=>p[1]);
   const width=Math.max(...xs)-Math.min(...xs),depth=Math.max(...ys)-Math.min(...ys);
+  const scale=trace.dimension?trace.dimension.meters/distance(...trace.dimension.pixels):10/Math.max(width,depth);
+  const readings=calibration?.axes.map(a=>a.meters/Math.abs(a.pixels[1]-a.pixels[0]));
+  const scaleXY=readings?[readings[0],readings[0]]:[scale,scale];
+  calibration?.axes.forEach((a,i)=>scaleXY[a.axis]=readings[i]);
   return {...trace,center:[(Math.min(...xs)+Math.max(...xs))/2,(Math.min(...ys)+Math.max(...ys))/2],
-    scale:trace.dimension?trace.dimension.meters/distance(...trace.dimension.pixels):10/Math.max(width,depth),
-    scaleSource:trace.dimension?'printed-dimension-raster-estimate':'display-normalization-only',
+    scale,scaleXY,calibration,
+    scaleSource:calibration?'cross-source-dimension-estimate':trace.dimension?'printed-dimension-raster-estimate':'display-normalization-only',
     height:2.4,vertical:{sill:.4,head:2.1,verified:false},type:trace.type};
 }
 // Catalog metadata is attached only after byte-hash and geometry validation.
 // No display-type fallback: an 84A from another site/variant is a different model.
-export function modelForPlan(plan){
+export function modelForPlan(plan,context={}){
+  if(context.building&&plan?.scope?.buildings&&!plan.scope.buildings.includes(String(context.building)))return null;
   const trace=planTraces.find(t=>t.id===plan?.trace?.id&&t.complexId===plan.complexId&&t.source.file===(plan.file??plan.imageFile)&&t.source.sha256===plan.trace.sourceSha256);
-  if(trace)return traceModel(trace);
+  if(trace){const calibration=planCalibrations[trace.id];const allowed=!context.building||calibration?.buildings?.includes(String(context.building));return traceModel(trace,allowed&&plan.trace.calibrationSha256===calibration?.sha256?calibration:null);}
   if(plan?.complexId==='sinchon-prugio'){
     const type=Object.keys(legacyModels).find(id=>(plan.file??plan.imageFile)===`research/sinchon-prugio/images/${id}.jpg`);
     if(type)return {...legacyModels[type],id:`sinchon-prugio/legacy-${type}`,type,scaleSource:'legacy-provisional',windows:legacyModels[type].windows.map((w,i)=>({...w,id:`legacy-${i+1}`}))};
@@ -73,14 +80,15 @@ export function windowPose(model,id,{insetMeters=.35,eyeHeight=1.5}={}){
   if(!Number.isFinite(insetMeters)||insetMeters<=0||!Number.isFinite(eyeHeight)||eyeHeight<=0)throw new RangeError('Invalid observer dimensions');
   const w=model.windows.find(w=>w.id===id);
   if(!w)throw new RangeError('Unknown opening');
-  const mid=w.a.map((v,i)=>(v+w.b[i])/2),length=distance(w.a,w.b);
-  let normal=[-(w.b[1]-w.a[1])/length,(w.b[0]-w.a[0])/length];
-  const inside=w.inside??mid.map((v,i)=>v+normal[i]*2);
-  if(w.inside?normal.reduce((n,v,i)=>n+v*(inside[i]-mid[i]),0)<0:!pointInPlan(inside,model.outline))normal=normal.map(n=>-n);
-  const point=mid.map((v,i)=>v+normal[i]*insetMeters/model.scale);
+  const mid=w.a.map((v,i)=>(v+w.b[i])/2),a=planLocalPoint(model,w.a),b=planLocalPoint(model,w.b),length=distance(a,b);
+  let normal=[-(b[1]-a[1])/length,(b[0]-a[0])/length];
+  const inside=w.inside??mid.map((v,i)=>v+normal[i]*2),insideLocal=planLocalPoint(model,inside),midLocal=planLocalPoint(model,mid);
+  if(w.inside?normal.reduce((n,v,i)=>n+v*(insideLocal[i]-midLocal[i]),0)<0:!pointInPlan(inside,model.outline))normal=normal.map(n=>-n);
+  const point=mid.map((v,i)=>v+normal[i]*insetMeters/(model.scaleXY?.[i]??model.scale));
   if(!pointInPlan(point,model.outline))throw new Error('Window observer falls outside the traced home');
-  const local=p=>p.map((v,i)=>(v-model.center[i])*model.scale);
+  const local=p=>planLocalPoint(model,p);
   return {id,point,position:[local(point)[0],eyeHeight,local(point)[1]],
-    outward:normal.map(n=>-n),widthMeters:length*model.scale,insetMeters,eyeHeight,
+    outward:normal.map(n=>-n),widthMeters:length,insetMeters,eyeHeight,
     scaleSource:model.scaleSource,geographicPlacementVerified:false};
 }
+export function planLocalPoint(model,p){return p.map((v,i)=>(v-model.center[i])*(model.scaleXY?.[i]??model.scale));}

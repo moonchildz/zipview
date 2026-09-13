@@ -10,11 +10,12 @@ const browser=await chromium.launch({channel:'chrome',headless:true});
 await mkdir('verification',{recursive:true});
 try {
   const page=await browser.newPage({viewport:{width:1440,height:1100}});
+  page.setDefaultTimeout(120000);
   const errors=[], responses=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('console',m=>{if(m.type()==='error' && /THREE|Shader|WebGL/.test(m.text()))errors.push(m.text());});
   page.on('response',r=>{if(r.url().includes('/api/imagery/'))responses.push({path:new URL(r.url()).pathname,status:r.status()});});
-  await page.goto(`${base}/${site==='xi'?'?site=xi':''}`);
+  await page.goto(`${base}/${site==='xi'?'?site=xi':'?site=sinchon'}`);
   const host=page.locator('#outlook-host');
   await page.waitForSelector('#outlook-host[data-ready="true"]');
   const heights=await host.getAttribute('data-camera-heights');
@@ -22,7 +23,7 @@ try {
   const status=await page.locator('#imagery-status').textContent();
   assert.equal(await host.getAttribute('data-imagery'),'visible',status);
   assert.equal(await host.getAttribute('data-camera-heights'),heights);
-  assert.equal(await host.getAttribute('data-imagery-zoom'),'15');
+  assert.equal(await host.getAttribute('data-imagery-zoom'),'18');
   assert.equal(await page.locator('#imagery-visible').isChecked(),true);
   await page.locator('#imagery-visible').uncheck();
   await page.locator('#roads-visible').uncheck();
@@ -49,8 +50,8 @@ try {
   assert.equal(responses.length,count);
   assert.deepEqual(errors,[]);
   const zoom=Number(await host.getAttribute('data-imagery-zoom'));
-  assert.equal(responses.filter(r=>r.path.includes('/tile/')&&r.status===200).length,4);
-  assert.equal(responses.length,5);
+  assert.equal(responses.filter(r=>r.path.endsWith('/image')&&r.status===200).length,1);
+  assert.equal(responses.length,2);
   assert.ok(responses.every(r=>r.status===200));
   const result={site,zoom,changed,heights,attribution,requests:responses.length,errors,liveImageryVerified:true,geographicAccuracyVerified:false};
   await writeFile(`verification/imagery-live-${site}.json`,JSON.stringify(result,null,2));

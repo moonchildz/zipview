@@ -10,6 +10,6 @@ export function homeSelection(result){
   const type=result.plan.displayType??result.planId;
   return {building:result.building,unit:result.unit,type,floor:Math.floor(Number(result.unit)/100),line:Number(result.unit)%100,
     scenario:result.scenario??false,comparison:!!(result.comparisonPreset||result.scenario),status:result.status,sourceStatus:result.sourceStatus,source:result.source,
-    plan:{...result.plan,id:type,imageFile:result.plan.file},placement:result.placement,
+    plan:{...result.plan,id:type,imageFile:result.plan.file},placement:result.placement,estimatedPreview:result.estimatedPreview,elevation:result.elevation,
     orientation:result.placement?.bearing??null,mirrored:result.placement?.mirrored??null,viewReady:result.viewReady};
 }

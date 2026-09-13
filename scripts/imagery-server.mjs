@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { loadEnv } from 'vite';
-import { imageryGrid } from '../src/imagery-coordinates.js';
+import { imageryGrid, staticImageryGrid } from '../src/imagery-coordinates.js';
 
 export function imageryMiddleware({key, centers, request = fetch, limit = 160}) {
   let session, pending, calls = 0;
@@ -35,10 +35,31 @@ export function imageryMiddleware({key, centers, request = fetch, limit = 160}) 
     const json = (status, data) => {res.statusCode = status;res.setHeader('Content-Type','application/json; charset=utf-8');res.end(JSON.stringify(data));};
     try {
       if (req.method !== 'GET' || req.headers['x-zipview-imagery'] !== '1' || req.headers['sec-fetch-site'] === 'cross-site') throw fail(403, '허용되지 않은 요청입니다.');
-      const match = /^\/api\/imagery\/(sinchon|xi)\/(metadata|tile\/\d+\/\d+)$/.exec(url.pathname);
+      const staticMatch = /^\/api\/imagery\/static\/(metadata|image)$/.exec(url.pathname);
+      if (staticMatch) {
+        const parameters=['lon','lat','zoom'];
+        if ([...url.searchParams.keys()].some(k=>!parameters.includes(k)) || parameters.some(k=>url.searchParams.getAll(k).length!==1||!url.searchParams.get(k)?.trim())) throw fail(400,'영상 좌표와 확대 수준을 확인해 주세요.');
+        const lon=Number(url.searchParams.get('lon')),lat=Number(url.searchParams.get('lat')),zoom=Number(url.searchParams.get('zoom'));
+        if(!Number.isFinite(lon)||Math.abs(lon)>180||!Number.isFinite(lat)||Math.abs(lat)>85||![17,18,19].includes(zoom)) throw fail(400,'지원하지 않는 영상 좌표 또는 확대 수준입니다.');
+        if(!key)throw fail(503,'Google Maps API 키 설정이 필요합니다.');
+        if(staticMatch[1]==='metadata')return json(200,{provider:'google-static',grid:staticImageryGrid([lon,lat],zoom),width:1280,height:1280});
+        if(++calls>limit)throw fail(429,'위성사진 요청 한도에 도달했습니다. 서버 관리자에게 확인해 주세요.');
+        const upstreamUrl=new URL('https://maps.googleapis.com/maps/api/staticmap');
+        upstreamUrl.search=new URLSearchParams({center:`${lat},${lon}`,zoom:String(zoom),size:'640x640',scale:'2',maptype:'satellite',key});
+        const response=await request(upstreamUrl,{signal:AbortSignal.timeout(15000)});
+        if(!response.ok)throw fail(502,`Google Static Maps 응답 ${response.status}: API 활성화·키 제한·결제·쿼터를 확인해 주세요.`);
+        const type=response.headers.get('content-type')??'';
+        if(!/^image\/(jpeg|png)/.test(type))throw fail(502,'Google 위성사진 이미지 응답이 아닙니다.');
+        res.setHeader('Content-Type',type);
+        res.end(Buffer.from(await response.arrayBuffer()));
+        return;
+      }
+      const match = /^\/api\/imagery\/(sinchon|xi|hanshin)\/(metadata|tile\/\d+\/\d+)$/.exec(url.pathname);
       const zoom = url.searchParams.get('zoom') ?? '18';
       if (!match || !['15','18'].includes(zoom) || [...url.searchParams.keys()].some(k=>k!=='zoom') || url.searchParams.getAll('zoom').length > 1) throw fail(400, '허용된 단지와 타일 범위만 조회할 수 있습니다.');
-      const [,site,action] = match, grid = imageryGrid(centers[site],Number(zoom),zoom==='15'?2:6);
+      const [,site,action] = match;
+      if(!centers[site])throw fail(400,'연결되지 않은 단지입니다.');
+      const grid = imageryGrid(centers[site],Number(zoom),zoom==='15'?2:6);
       const viewportKey = `${site}:${zoom}`;
       const [,xText,yText] = action.split('/'), x = Number(xText), y = Number(yText);
       if (action !== 'metadata' && !(Number.isInteger(x) && Number.isInteger(y) && x >= grid.left && x < grid.left + grid.count && y >= grid.top && y < grid.top + grid.count)) throw fail(400, '타일이 조회 범위 밖입니다.');
@@ -73,7 +94,7 @@ export function satellitePlugin() {
     name:'google-satellite-preview',
     configResolved(config) {
       const env = loadEnv(config.mode, config.root, 'GOOGLE_');
-      const centers = Object.fromEntries([['sinchon','research/sinchon-prugio/outlook/scene.json'],['xi','research/gyeonghuigung-xi/scene.json']]
+      const centers = Object.fromEntries([['sinchon','research/sinchon-prugio/outlook/scene.json'],['xi','research/gyeonghuigung-xi/scene.json'],['hanshin','research/hanshin-hanjin/scene.json']]
         .map(([site,path]) => [site,JSON.parse(readFileSync(new URL(`../${path}`,import.meta.url),'utf8')).center]));
       middleware = imageryMiddleware({key:process.env.GOOGLE_MAPS_API_KEY || env.GOOGLE_MAPS_API_KEY, centers});
     },

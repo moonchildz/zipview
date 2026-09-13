@@ -23,3 +23,13 @@ export function groundUV(x, z, center, grid) {
   const [tx, ty] = tilePoint(lon, lat, grid.zoom);
   return [(tx - grid.left) / grid.count, 1 - (ty - grid.top) / grid.count];
 }
+
+// Static Maps size is measured in logical pixels; scale=2 doubles the returned
+// pixels without changing this geographic footprint.
+export function staticImageryGrid(center, zoom = 18, size = 640) {
+  const [x,y] = tilePoint(...center,zoom), count = size / 256;
+  const left = x-count/2, top = y-count/2;
+  const [west,north] = tileLocation(left,top,zoom);
+  const [east,south] = tileLocation(left+count,top+count,zoom);
+  return {zoom,left,top,count,west,north,east,south};
+}

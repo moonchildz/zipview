@@ -15,6 +15,11 @@ test('real adapters link every transcribed unit, retain missing files, and rebui
   assert.equal(index.resolve('경희궁자이 2단지','211','1207').status,xiInventory?.complete?'unit-not-found':'unit-unlinked');
   assert.equal(index.resolve('서울대방','101','202').status,'unit-unlinked');
   assert.equal(index.resolve('신촌푸르지오2단지','102','201').status,'building-unlinked');
+  const correction=JSON.parse(readFileSync('research/sinchon-prugio/outlook/mapinfo-correction.json','utf8'));
+  const b208=c.buildings.find(b=>b.complexId==='sinchon-prugio'&&b.building==='208');
+  assert.equal(b208.geometry.id,902872243);
+  assert.equal(b208.geometry.base,correction.buildings.find(b=>b.id===902872243).base);
+  if(b208.officialBuilding){assert.equal(b208.geometry.height,b208.officialBuilding.height);assert.equal(b208.geometry.levels,3);}
   assert.ok(c.units.every(u=>!u.viewReady&&!u.verified));
   if(existsSync('mapinfo'))assert.ok(c.assets.some(a=>a.path.startsWith('mapinfo/')&&a.complexId==='sinchon-prugio'));
   execFileSync(process.execPath,['scripts/build-linkage.mjs'],{stdio:'pipe'});

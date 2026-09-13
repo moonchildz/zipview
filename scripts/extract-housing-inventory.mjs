@@ -11,6 +11,7 @@ const zip = await new Promise((resolve, reject) => yauzl.open(`${dir}/housing-20
 const targets = [
   { id: 'gyeonghuigung-xi', address: '서울특별시 종로구 송월길 99', legalCode: '1111017900', bun: 199, ji: 0, units: [] },
   { id: 'sinchon-prugio', address: '서울특별시 서대문구 북아현로1길 50', legalCode: '1141011000', bun: 1011, ji: 0, units: [] },
+  { id: 'hanshin-hanjin', address: '서울특별시 성북구 성북로4길 52', bun: 609, ji: 1, units: [] },
 ];
 const entry = await new Promise((resolve, reject) => {
   zip.on('error', reject);
@@ -28,7 +29,7 @@ const hashStream = new Transform({ transform(chunk, encoding, callback) { hash.u
 await pipeline(stream, hashStream, parse({ columns: true, bom: true }), async records => {
   for await (const row of records) {
     rows++;
-    const target = targets.find(t => row['도로명주소'] === t.address && row['법정동코드'] === t.legalCode && Number(row['본번']) === t.bun && Number(row['부번']) === t.ji);
+    const target = targets.find(t => row['도로명주소'] === t.address && (!t.legalCode||row['법정동코드'] === t.legalCode) && Number(row['본번']) === t.bun && Number(row['부번']) === t.ji);
     if (target) target.units.push({
       building: row['동명'], unit: row['호명'], exclusiveArea: Number(row['전용면적']),
       name: row['단지명'], registryId: row['건축물대장PK'] || null,

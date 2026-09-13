@@ -5,9 +5,14 @@ import {DatabaseSync} from 'node:sqlite';
 import {extractImageCharts} from './extract-image-charts.mjs';
 import {compileLinkage,providerComplexTarget} from '../src/unit-linkage.js';
 import {unitCoverage} from '../src/unit-coverage.js';
-import {compileOfficialSites} from '../src/official-buildings.js';
+import {compileOfficialSites,buildingNumber} from '../src/official-buildings.js';
+import {applyTerrainCorrection} from '../src/neighborhood.js';
+import {applyBuildingFootprints} from '../src/building-footprints.js';
 import {connectHousingInventory} from '../src/housing-inventory.js';
 import {attachPlanTraces} from './compile-plan-traces.mjs';
+import {connectShRentalPlans} from './connect-sh-rental-plans.mjs';
+import {attachEstimatedViews} from '../src/estimated-view.js';
+import {connectHanshin} from './connect-hanshin.mjs';
 import {complex as sinchon,plans as sinchonPlans,units as sinchonUnits} from '../src/data.js';
 import {normalizeComplexes,expandUnitRanges} from '../src/seoul-data.js';
 import {XI_UNIT_RULES,XI_UNIT_SOURCES} from '../src/xi-unit-registry.js';
@@ -39,9 +44,11 @@ for(const id of ['74A','74B'])plans.push({id,complexId:daebang.id,file:null,sour
 for(const p of plans)p.available=!!p.file&&existsSync(p.file);
 for(const [complexId,path,site] of [[sinchon.id,'research/sinchon-prugio/outlook/scene.json','https://www.openstreetmap.org/way/463988053'],['gyeonghuigung-xi','research/gyeonghuigung-xi/scene.json','https://www.openstreetmap.org/way/359124892']]){
   const scene=await optional(path);if(!scene)continue;
-  for(const b of scene.buildings.filter(b=>b.siteSource===site&&/^\d+$/.test(b.name)&&(complexId!==sinchon.id||sinchon.buildings.includes(b.name)))){
-    buildings.push({complexId,building:b.name,geometry:{scene:path,id:b.id,source:b.source,siteSource:b.siteSource,
-      center:scene.center,base:b.base,height:b.height,heightSource:b.heightSource,levels:b.levels,verified:false}});
+  if(complexId===sinchon.id)applyTerrainCorrection(scene,await optional('research/sinchon-prugio/outlook/mapinfo-correction.json'));
+  applyBuildingFootprints(scene,await optional('research/sinchon-prugio/outlook/building-footprints.json'));
+  for(const b of scene.buildings.filter(b=>b.siteSource===site&&buildingNumber(b.name)&&(complexId!==sinchon.id||sinchon.buildings.includes(buildingNumber(b.name))))){
+    buildings.push({complexId,building:buildingNumber(b.name),geometry:{scene:path,id:b.id,source:b.source,siteSource:b.siteSource,
+      center:scene.center,points:b.points,parts:b.parts,geometrySource:b.geometrySource,geometryStatus:b.geometryStatus,base:b.base,baseSource:b.baseSource,height:b.height,heightSource:b.heightSource,levels:b.levels,verified:false}});
   }
   if(complexId==='gyeonghuigung-xi')for(const [building,r] of Object.entries(XI_UNIT_RULES)){
     const b=scene.buildings.find(b=>b.id===r.buildingId&&b.siteSource===site);if(!b)throw new Error('Xi geometry crosswalk missing');
@@ -96,6 +103,10 @@ if(existsSync('research/linkage/packages'))for(const name of (await readdir('res
   for(const r of p.ranges??[])for(const u of expandUnitRanges([r]))units.push({...u,complexId:r.complexId,planId:r.chartType,source:r.source,placement:r.placement??null});
 }
 // Public provider snapshots are produced by code, including newly searched addresses.
+// The full Hanshin/Hanjin provider combines the rental address record. Bind its
+// known identity before address-only matching could create a third duplicate.
+const hanshinComplex=complexes.find(c=>c.id==='seoul:A13606004');
+if(hanshinComplex)hanshinComplex.kbId='36331';
 if(existsSync('research/linkage/providers/kb'))for(const name of (await readdir('research/linkage/providers/kb')).filter(n=>/^\d+\.json$/.test(n)).sort()){
   const provider=await optional(`research/linkage/providers/kb/${name}`);
   let c=providerComplexTarget(complexes,provider);
@@ -132,6 +143,7 @@ if(existsSync('research/linkage/providers/kb'))for(const name of (await readdir(
     units.push({...u,complexId:c.id,planId:plan.id,source:provider.source});
   }
 }
+await connectHanshin({complexes,buildings,plans,units});
 for(const supplement of await optional('research/linkage/plan-supplements.json')??[]){
   const base=plans.find(p=>p.complexId===supplement.complexId&&p.providerAreaId===supplement.providerAreaId);
   if(!base||base.displayType!==supplement.displayType)continue;
@@ -168,13 +180,18 @@ const housing=connectHousingInventory({snapshot:existsSync(inventoryPath)?await 
 for(const report of housing.reports){
   if(report.completeInventory)complexes.find(c=>c.id===report.complexId).officialInventory={count:report.officialUnits,complete:true,source:'https://www.data.go.kr/data/3073746/fileData.do'};
 }
+const rentalPlanReport=await connectShRentalPlans(plans,housing.units);
 const planTraceReport=await attachPlanTraces(plans);
 const catalog=compileLinkage({complexes,buildings,plans,units:housing.units,lineAssociations,assets,inputs});
 catalog.planTraceReport=planTraceReport;
+catalog.rentalPlanReport=rentalPlanReport;
 catalog.housingInventory=housing.reports;
 for(const site of targetSites)for(const fact of site.facts){
   const building=buildings.find(b=>b.complexId===site.id&&b.building===fact.building);
-  if(building)building.officialBuilding=fact;
+  if(building){
+    building.officialBuilding=fact;
+    if(building.geometry)Object.assign(building.geometry,{height:fact.height,levels:fact.levels,heightSource:'official-building-register',heightEvidence:fact.source});
+  }
 }
 catalog.targetSites=targetSites;
 for(const unit of catalog.units){
@@ -183,6 +200,7 @@ for(const unit of catalog.units){
 }
 for(const unit of catalog.units)if(unit.complexId===sinchon.id&&sinchon.buildings.includes(unit.building)&&unit.plan?.available&&unit.status!=='conflict')unit.planPreview=`/?site=sinchon&building=${unit.building}&unit=${unit.unit}`;
 catalog.coverage.previews=catalog.units.filter(u=>u.preview&&!u.scenario).length;
+attachEstimatedViews(catalog);
 catalog.unitCoverage=unitCoverage(catalog);
 catalog.coverage.fullyLinkedComplexes=catalog.unitCoverage.filter(c=>c.completePlanLookup).length;
 catalog.coverage.sourceUnitsWithPlanImages=catalog.unitCoverage.reduce((n,c)=>n+c.unitsWithPlanImages,0);

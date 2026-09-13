@@ -27,6 +27,14 @@ export function extractPublicComplex(html,expectedId){
     const area=Number(t['전용면적']),supply=Number(t['공급면적']);
     if(!Number.isFinite(area)||area<=0||!Number.isFinite(supply)||supply<area)throw new Error('Invalid plan area');
     const typeSuffix=String(t['주택형타입내용']??'');
+    const references=[];
+    if(t['평면도보기주소']) {
+      try {
+        const url=new URL(t['평면도보기주소']);
+        if(url.protocol==='https:'&&['land.naver.com','new.land.naver.com'].includes(url.hostname))
+          references.push({kind:'provider-plan-viewer',url:url.href});
+      } catch {/* Keep invalid external references out of the collection queue. */}
+    }
     const variants=[];
     for(const [variant,flag,path,name] of [['basic','기본평면도노출여부','기본컨텐츠경로','기본평면도이미지파일명'],['extended','확장평면도노출여부','확장컨텐츠경로','확장형평면도이미지파일명']]){
       if(t[flag]!=='1'||!t[name])continue;
@@ -35,7 +43,7 @@ export function extractPublicComplex(html,expectedId){
       variants.push({variant,url});
     }
     plans.push({areaId,area,supply,typeSuffix,displayType:`${Math.floor(area)}${typeSuffix}`,providerLabel:`${supply}㎡ ${typeSuffix}`.trim(),
-      households:Number(t['세대수'])||null,rooms:Number(t['방수'])||null,bathrooms:Number(t['욕실수'])||null,variants});
+      households:Number(t['세대수'])||null,rooms:Number(t['방수'])||null,bathrooms:Number(t['욕실수'])||null,variants,references});
   }
   return {provider:'kb-public',providerId:String(expectedId),source:`https://kbland.kr/se/c/${expectedId}`,
     name:d['단지명'],address:d['신주소'],landAddress:d['구주소'],households:Number(d['총세대수'])||null,

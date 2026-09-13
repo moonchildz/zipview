@@ -76,7 +76,11 @@ export function createUnitIndex(catalog){
       if((request.building&&building&&number(request.building,'동')!==number(building,'동'))||(request.unit&&unit&&number(request.unit,'호')!==number(unit,'호')))return {status:'invalid-input',viewReady:false};
       address=request.address;building=request.building??building;unit=request.unit??unit;
       const exact=aliases.get(normalizeAddress(address));
-      const ids=[...(exact??new Set(addressKeys(address).flatMap(key=>[...(aliases.get(key)??[])])))];
+      let ids=[...(exact??new Set(addressKeys(address).flatMap(key=>[...(aliases.get(key)??[])])))];
+      if(ids.length>1&&building){
+        const scoped=ids.filter(id=>cs.get(id).addressBuildingScope?.includes(number(building,'동')));
+        if(scoped.length===1)ids=scoped;
+      }
       if(ids.length!==1)return {status:ids.length?'ambiguous-address':'address-not-registered',candidates:ids.map(id=>cs.get(id)),viewReady:false};
       const complex=cs.get(ids[0]),b=number(building,'동'),u=number(unit,'호');
       const availablePlans=catalog.plans.filter(p=>p.complexId===complex.id);
@@ -88,6 +92,7 @@ export function createUnitIndex(catalog){
       if(match)return {...match,complex,availablePlans};
       if(complex.officialInventory?.complete)return {status:'unit-not-found',complex,building:b,unit:u,availablePlans,viewReady:false,gaps:['unit-absent-from-complete-inventory']};
       const known=catalog.buildings.find(r=>r.complexId===complex.id&&r.building===b);
+      if(known?.inventoryComplete)return {status:'unit-not-found',complex,building:b,unit:u,availablePlans,viewReady:false,gaps:['unit-absent-from-complete-inventory']};
       if(known?.geometry?.levels&&Math.floor(Number(u)/100)>known.geometry.levels)return {status:'unit-unlinked',complex,building:b,unit:u,availablePlans,viewReady:false,gaps:['floor-above-building-levels']};
       const lines=(catalog.lineAssociations??[]).filter(r=>r.complexId===complex.id&&r.building===b&&r.line===Number(u)%100);
       if(lines.length){

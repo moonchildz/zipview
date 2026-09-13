@@ -54,10 +54,13 @@ export function reviewKml(data, cameras, state, dom = document) {
   const buildings = add(root,'Folder'); add(buildings,'name','건물 외곽 · OSM / 적용된 수치지도 보정');
   for (const b of data.buildings.filter(b => nearby(b.points))) {
     const p = add(buildings,'Placemark'); add(p,'name',b.label); add(p,'description',`${b.source}\n높이 ${b.height}m (${b.heightSource})\n${b.siteSource ?? ''}\n수치지도 외곽선 UFID: ${b.geometrySource ?? '미적용'}\n지반: ${b.base}m (${b.baseSource ?? '기존 지형 추정'})`); add(p,'styleUrl','#buildings');
-    const polygon = add(p,'Polygon'); add(polygon,'altitudeMode','clampToGround');
+    const volumes=(b.parts??[b]).filter(v=>v.points.length>=3),container=volumes.length>1?add(p,'MultiGeometry'):p;
+    for(const volume of volumes){
+    const polygon = add(container,'Polygon'); add(polygon,'altitudeMode','clampToGround');
     const ring = add(add(polygon,'outerBoundaryIs'),'LinearRing');
-    const points = b.points[0].every((v,i) => v === b.points.at(-1)[i]) ? b.points : [...b.points,b.points[0]];
+    const points = volume.points[0].every((v,i) => v === volume.points.at(-1)[i]) ? volume.points : [...volume.points,volume.points[0]];
     add(ring,'coordinates',coordinates(points));
+    }
   }
   const roads = add(root,'Folder'); add(roads,'name','도로 중심선 · OSM');
   for (const road of data.roads.filter(r => nearby(r.points))) {

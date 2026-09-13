@@ -1,0 +1,298 @@
+{
+  "version": 1,
+  "center": [
+    126.9546759125,
+    37.5611203
+  ],
+  "siteSource": "https://www.openstreetmap.org/way/463988053",
+  "buildings": [
+    {
+      "id": "ngii:sinchon-prugio:209",
+      "name": "209",
+      "kind": "apartments",
+      "label": "신촌푸르지오아파트 209동",
+      "height": 11.52,
+      "levels": 3,
+      "heightSource": "official-building-register",
+      "heightEvidence": "https://www.hub.go.kr/portal/gis/bld/idx-bld-detail.do",
+      "siteSource": "https://www.openstreetmap.org/way/463988053",
+      "source": "research\\sinchon-prugio\\mapinfo-review\\source-review.json",
+      "points": [
+        [
+          28.31875845668047,
+          -16.482078797706023
+        ],
+        [
+          27.71183409051888,
+          -19.32707859586845
+        ],
+        [
+          15.266457436681197,
+          -16.843476182132235
+        ],
+        [
+          16.89026348013874,
+          -5.062347340766777
+        ],
+        [
+          17.28570170547149,
+          -2.195205313112183
+        ],
+        [
+          28.5669483890925,
+          -4.393715911946288
+        ],
+        [
+          30.700699774159414,
+          -4.809512967525507
+        ],
+        [
+          28.566708170865592,
+          -15.36011116500223
+        ],
+        [
+          28.31875845668047,
+          -16.482078797706023
+        ]
+      ],
+      "parts": [
+        {
+          "points": [
+            [
+              28.31875845668047,
+              -16.482078797706023
+            ],
+            [
+              27.71183409051888,
+              -19.32707859586845
+            ],
+            [
+              15.266457436681197,
+              -16.843476182132235
+            ],
+            [
+              16.89026348013874,
+              -5.062347340766777
+            ],
+            [
+              17.28570170547149,
+              -2.195205313112183
+            ],
+            [
+              28.5669483890925,
+              -4.393715911946288
+            ],
+            [
+              30.700699774159414,
+              -4.809512967525507
+            ],
+            [
+              28.566708170865592,
+              -15.36011116500223
+            ],
+            [
+              28.31875845668047,
+              -16.482078797706023
+            ]
+          ],
+          "inheritBuildingHeight": true
+        },
+        {
+          "points": [
+            [
+              34.66683472183754,
+              -5.8122793694364105
+            ],
+            [
+              37.98869507053562,
+              -6.395956001136263
+            ],
+            [
+              37.49270238151666,
+              -8.842268191692106
+            ],
+            [
+              40.397582845759786,
+              -9.358618962631304
+            ],
+            [
+              39.750628470875974,
+              -12.475105435820986
+            ],
+            [
+              33.72842059629424,
+              -11.333097311193328
+            ],
+            [
+              34.66683472183754,
+              -5.8122793694364105
+            ]
+          ],
+          "inheritBuildingHeight": true
+        }
+      ],
+      "base": 45.155,
+      "baseSource": "NGII contour interpolation at footprint centroid; first-floor datum unverified",
+      "geometrySource": "NGII sheet union; three address-and-dong-labelled source features",
+      "geometryStatus": "source-reviewed-estimate",
+      "geometryVerified": false
+    },
+    {
+      "id": 902872238,
+      "name": "210",
+      "kind": "apartments",
+      "label": "신촌푸르지오아파트 210동",
+      "height": 13.9,
+      "levels": 4,
+      "heightSource": "official-building-register",
+      "heightEvidence": "https://www.hub.go.kr/portal/gis/bld/idx-bld-detail.do",
+      "siteSource": "https://www.openstreetmap.org/way/463988053",
+      "source": "https://www.openstreetmap.org/way/902872238",
+      "points": [
+        [
+          39.364305512263634,
+          15.444985499561454
+        ],
+        [
+          40.04301943136139,
+          19.32569099987674
+        ],
+        [
+          51.97780705183563,
+          15.622897500060375
+        ],
+        [
+          44.159375279511835,
+          -17.313061500059597
+        ],
+        [
+          33.86407842552879,
+          -16.078796999857445
+        ],
+        [
+          34.6590560718507,
+          -11.50957631960451
+        ],
+        [
+          39.750628470875974,
+          -12.475105435820986
+        ],
+        [
+          40.397582845759786,
+          -9.358618962631304
+        ],
+        [
+          37.49270238151666,
+          -8.842268191692106
+        ],
+        [
+          37.98869507053562,
+          -6.395956001136263
+        ],
+        [
+          35.621556809276186,
+          -5.980031446197867
+        ],
+        [
+          39.364305512263634,
+          15.444985499561454
+        ]
+      ],
+      "parts": [
+        {
+          "points": [
+            [
+              39.364305512263634,
+              15.444985499561454
+            ],
+            [
+              40.04301943136139,
+              19.32569099987674
+            ],
+            [
+              51.97780705183563,
+              15.622897500060375
+            ],
+            [
+              44.159375279511835,
+              -17.313061500059597
+            ],
+            [
+              33.86407842552879,
+              -16.078796999857445
+            ],
+            [
+              34.6590560718507,
+              -11.50957631960451
+            ],
+            [
+              39.750628470875974,
+              -12.475105435820986
+            ],
+            [
+              40.397582845759786,
+              -9.358618962631304
+            ],
+            [
+              37.49270238151666,
+              -8.842268191692106
+            ],
+            [
+              37.98869507053562,
+              -6.395956001136263
+            ],
+            [
+              35.621556809276186,
+              -5.980031446197867
+            ],
+            [
+              39.364305512263634,
+              15.444985499561454
+            ]
+          ],
+          "inheritBuildingHeight": true
+        }
+      ],
+      "base": 43.872,
+      "baseSource": "NGII contour interpolation at footprint centroid; first-floor datum unverified",
+      "geometrySource": "OSM eastern wing; site-blueprint separation; NGII209 difference",
+      "geometryStatus": "source-reviewed-estimate",
+      "geometryVerified": false
+    }
+  ],
+  "evidence": {
+    "ngii": {
+      "file": "research\\sinchon-prugio\\mapinfo-review\\source-review.json",
+      "sha256": "70b88ef2ab24c6a35ab188ffa6e6ffbe5da315694a21202cfba48f50447f8057",
+      "ufids": [
+        "1000376082071B00110000000000000050",
+        "1000376082072B00110000000000000280",
+        "1000376082072B00110000000000000273"
+      ]
+    },
+    "siteBlueprint": {
+      "file": "research/linkage/downloads/hub/sinchon-prugio.jpg",
+      "reading": "209 west terrace block; 210 east elongated wing"
+    },
+    "terraceDrawing": "research/linkage/downloads/evidence/sh/70339-49-ef38aea4fba4.jpeg",
+    "osm210VertexIndices": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "checks": {
+    "ngiiSourceParts": 3,
+    "merged209Parts": 2,
+    "area209M2": 222.98191365579567,
+    "area210M2": 374.7767577975207,
+    "overlapM2": 0.0
+  },
+  "limitations": [
+    "210 outer boundary remains OSM-based; no labelled NGII210 polygon found",
+    "Footprint geometry does not establish floor elevation or window registration"
+  ]
+}

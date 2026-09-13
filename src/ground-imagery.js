@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { groundUV } from './imagery-coordinates.js';
+import { geographicPoint } from './outlook-math.js';
 
 export function imageryMaterial(texture) {
   const material = new THREE.MeshBasicMaterial({map:texture, toneMapped:false});
@@ -20,10 +21,14 @@ export function bindGroundImagery(outlook) {
   const status = document.querySelector('#imagery-status');
   const credits = document.querySelector('#imagery-credits');
   const roads = document.querySelector('#roads-visible');
-  const site = outlook.options.correction === false ? 'xi' : 'sinchon';
+  // Use the selected building, including future complexes, not a pilot-site alias.
+  const ring=outlook.target.points;
+  const points=ring.length>1&&ring[0][0]===ring.at(-1)[0]&&ring[0][1]===ring.at(-1)[1]?ring.slice(0,-1):ring;
+  const center=geographicPoint(points.reduce((n,p)=>n+p[0],0)/points.length,points.reduce((n,p)=>n+p[1],0)/points.length,outlook.data.center);
   const originals = outlook.terrainMeshes.map(mesh => mesh.material);
   let material, controller, loading = false;
-  const zoom = 15;
+  const zoom = 18;
+  const params=new URLSearchParams({lon:center.lon.toFixed(8),lat:center.lat.toFixed(8),zoom:String(zoom)});
   outlook.host.dataset.imagery = 'idle';
   const setVisible = visible => {
     if (!material) return;
@@ -35,7 +40,7 @@ export function bindGroundImagery(outlook) {
   };
   toggle.addEventListener('change', () => setVisible(toggle.checked));
   const read = async path => {
-    const response = await fetch(`/api/imagery/${site}/${path}?zoom=${zoom}`, {headers:{'X-Zipview-Imagery':'1'}, signal:controller.signal, cache:'no-store'});
+    const response = await fetch(`/api/imagery/static/${path}?${params}`, {headers:{'X-Zipview-Imagery':'1'}, signal:controller.signal, cache:'no-store'});
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
       throw Object.assign(new Error(data.error || `위성사진 연결 오류 (${response.status})`),{status:response.status});
@@ -50,19 +55,17 @@ export function bindGroundImagery(outlook) {
     outlook.host.dataset.imagery = 'loading';
     try {
       const metadata = await (await read('metadata')).json();
-      const {grid,tileSize,copyright} = metadata;
+      const {grid,width,height} = metadata;
+      if(metadata.provider!=='google-static'||width!==1280||height!==1280||grid?.zoom!==zoom)throw new Error('위성사진 범위 정보가 올바르지 않습니다.');
       const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = grid.count * tileSize;
+      canvas.width = width;canvas.height = height;
       const context = canvas.getContext('2d');
-      // Request only this finite ground viewport, one tile at a time. No disk cache.
-      let completed = 0;
-      for (let row=0;row<grid.count;row++) for (let col=0;col<grid.count;col++) {
-        const blob = await (await read(`tile/${grid.left+col}/${grid.top+row}`)).blob();
-        const bitmap = await createImageBitmap(blob);
-        if (bitmap.width !== tileSize || bitmap.height !== tileSize) {bitmap.close();throw new Error('위성사진 타일 크기가 일치하지 않습니다.');}
-        context.drawImage(bitmap,col*tileSize,row*tileSize);bitmap.close();
-        status.textContent = `위성사진 ${++completed}/${grid.count**2}`;
-      }
+      status.textContent='고해상도 위성사진 불러오는 중…';
+      const blob=await(await read('image')).blob();
+      const bitmap=await createImageBitmap(blob);
+      if(bitmap.width!==width||bitmap.height!==height){bitmap.close();throw new Error('위성사진 크기가 일치하지 않습니다.');}
+      // Preserve the complete image, including Google's embedded attribution.
+      context.drawImage(bitmap,0,0);bitmap.close();
       const texture = new THREE.CanvasTexture(canvas);
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = Math.min(16,outlook.renderer.capabilities.getMaxAnisotropy());
@@ -74,11 +77,13 @@ export function bindGroundImagery(outlook) {
       }
       credits.replaceChildren();
       const name = document.createElement('strong');name.textContent = 'Google Maps';
-      const attribution = document.createElement('span');attribution.textContent = `지면 영상 · ${copyright}`;
+      const attribution = document.createElement('a');attribution.textContent = '원본 영상·제공자 출처 보기';
+      attribution.href=URL.createObjectURL(blob);attribution.target='_blank';attribution.rel='noopener';
       const overlay = document.createElement('span');overlay.textContent = '건물: OSM 기반 추정 · 지형: 별도 표고 모델';
       credits.append(name,attribution,overlay);
       toggle.disabled = false;toggle.checked = true;button.hidden = true;
-      status.textContent = `확대 수준 ${grid.zoom}${grid.zoom===15?' · 저해상도 약 3.8m/픽셀 · 좁은 길·화단 식별 제한':''} · 촬영 시점·건물 정합 미검증`;
+      status.textContent = '고해상도 위성사진 · 선택 건물 주변 약 300m · 촬영 시점·건물 정합 미검증';
+      outlook.host.dataset.imageryProvider='google-static';
       outlook.host.dataset.imageryZoom = String(grid.zoom);
       setVisible(true);
     } catch (error) {

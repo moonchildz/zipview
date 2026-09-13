@@ -8,6 +8,7 @@ import { ModelInspector } from './model-inspector.js';
 import { terrainGeometries } from './terrain-mesh.js';
 import { bindGroundImagery } from './ground-imagery.js';
 import { applyOfficialBuildingFacts } from './official-buildings.js';
+import { neighborhoods } from './neighborhood.js';
 import officialSites from '../research/linkage/generated/target-sites.json';
 import './ground-imagery.css';
 
@@ -56,18 +57,14 @@ export class OutlookScene {
   }
 
   async load() {
-    const response = await fetch(this.options.sceneUrl ?? '/research/sinchon-prugio/outlook/scene.json');
-    if (!response.ok) throw new Error('전망 데이터 파일을 불러오지 못했습니다.');
-    this.data = await response.json();
     const original = new URLSearchParams(location.search).get('terrain') === 'original';
-    const correctionResponse = original || this.options.correction === false ? null : await fetch('/research/sinchon-prugio/outlook/mapinfo-correction.json');
-    if (correctionResponse && !correctionResponse.ok) throw new Error('수치지도 보정 데이터를 불러오지 못했습니다.');
-    const correction = correctionResponse ? await correctionResponse.json() : null;
-    if (correction) {
-      this.data.terrain.local = correction.terrain;
-      const overrides = new Map(correction.buildings.map(b => [b.id, b]));
-      for (const building of this.data.buildings) Object.assign(building, overrides.get(building.id) ?? {});
-    }
+    const sceneUrl=this.options.sceneUrl??'/research/sinchon-prugio/outlook/scene.json';
+    const correctionUrl=original||this.options.correction===false?null:this.options.correctionUrl??(sceneUrl==='/research/sinchon-prugio/outlook/scene.json'?'/research/sinchon-prugio/outlook/mapinfo-correction.json':null);
+    this.neighborhood=await neighborhoods.load({sceneUrl,correctionUrl,footprintsUrl:original?null:'/research/sinchon-prugio/outlook/building-footprints.json'});
+    this.selection={...this.neighborhood.defaultSelection};
+    // Compatibility boundary for legacy facade and window adapters.
+    this.data={...this.neighborhood.environment,...this.selection};
+    const correction=correctionUrl?{status:this.neighborhood.correctionStatus}:null;
     this.host.dataset.officialBuildings=String(applyOfficialBuildingFacts(this.data,officialSites));
     this.options.prepareData?.(this.data);
     const note = document.querySelector('#terrain-source');
@@ -77,7 +74,7 @@ export class OutlookScene {
     comparison.textContent = original ? '보정 결과 보기' : '보정 전과 비교';
     note.append(comparison);
     if (this.options.sourceNote) note.textContent = this.options.sourceNote;
-    this.host.dataset.terrainSource = this.options.correction === false ? 'mapzen-estimated' : original ? 'original' : 'ngii-interpolated';
+    this.host.dataset.terrainSource = correctionUrl ? 'ngii-interpolated' : original ? 'original' : 'mapzen-estimated';
     this.target = this.data.buildings.find(b => b.id === this.data.targetBuildingId);
     this.state.bearing = this.data.window.bearing;
     this.buildLocator();
@@ -194,8 +191,9 @@ export class OutlookScene {
     const ns = 'http://www.w3.org/2000/svg';
     const group = document.querySelector('#locator-buildings');
     group.replaceChildren();
+    const focus=this.options.locatorAtWindow?localPoint(this.data.window.lon,this.data.window.lat,this.data.center):[0,0];
     for (const b of this.data.buildings) {
-      if (!b.points.some(([x, z]) => Math.abs(x) < 90 && Math.abs(z) < 65)) continue;
+      if (!b.points.some(([x, z]) => Math.abs(x-focus[0]) < 90 && Math.abs(z-focus[1]) < 65)) continue;
       const polygon = document.createElementNS(ns, 'polygon');
       polygon.setAttribute('points', b.points.map(p => p.join(',')).join(' '));
       polygon.setAttribute('fill', b.id === this.target.id ? '#b8d9ce' : '#e1e3df');

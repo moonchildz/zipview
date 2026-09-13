@@ -26,7 +26,7 @@ try{for(const width of [1440,390]){
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.goto(base+'/?site=xi&building=211&unit=1202');
   await page.waitForSelector('#outlook-host[data-interior="active"]');
-  assert.equal(await page.locator('#outlook-host').getAttribute('data-official-buildings'),'22','14 Xi buildings and 8 surrounding Sinchon buildings in this scene');
+  assert.equal(await page.locator('#outlook-host').getAttribute('data-official-buildings'),'24','14 Xi buildings and all 10 surrounding Sinchon buildings, including the recovered 209');
   await page.goto(base+'/?site=xi&building=204&unit=102');
   await page.waitForSelector('#outlook-host[data-interior="active"]');
   assert.equal(await page.locator('#floor-a').inputValue(),'1');

@@ -31,11 +31,13 @@ function setCatalog(value){
   $('#missing-inputs').textContent=catalog.inputs.filter(i=>i.status==='missing').map(i=>`${i.path} — 현재 PC에 없음`).join('\n');
   const list=$('#saved-list');list.replaceChildren();
   for(const complex of catalog.complexes){
-    const plans=catalog.plans.filter(p=>p.complexId===complex.id&&p.available),count=planImageCount(plans);if(!count)continue;
+    const plans=catalog.plans.filter(p=>p.complexId===complex.id&&p.available),count=planImageCount(plans);
+    const views=(catalog.estimatedViewReport??[]).filter(r=>r.complexId===complex.id).reduce((n,r)=>n+r.estimatedUnits,0);
+    if(!count&&!views)continue;
     const a=link('', `/?${new URLSearchParams({site:'catalog',address:complex.id})}`,list);
     const p=plans.find(p=>/\.(png|jpe?g|webp)$/i.test(p.file));
     if(p){const img=element('img','',a);img.src=`/${p.file}`;img.alt=`${complex.name} 평면도`;img.loading='lazy';}
-    const text=element('div','',a);element('strong',`${complex.name} · ${count}장`,text);
+    const text=element('div','',a);element('strong',`${complex.name} · 도면 ${count}장${views?` · 지형 전망 ${views}세대`:''}`,text);
     element('span',complex.address??'주소 미확인',text);
     const coverage=catalog.unitCoverage?.find(c=>c.complexId===complex.id);
     if(coverage)element('span',`호별 도면 ${coverage.unitsWithPlanImages}/${coverage.expectedUnits??'?'}호 · ${coverage.completePlanLookup?'자료상 전수 연결':'연결 미완료'}${coverage.lineCandidates?` · 라인 후보 ${coverage.lineCandidates}개`:''}`,text);
@@ -46,6 +48,16 @@ function localResult(){return index.resolve(...values());}
 function display(r){
   result.replaceChildren();result.dataset.status=r.status;element('h2',r.sourceStatus==='source-linked-candidate'?'배치 자료에 따른 세대 타입 후보':labels[r.status]??r.status);
   if(r.complex)element('p',`${r.complex.name} · ${r.complex.address??'주소 미확인'}${r.building?` · ${r.building}동 ${r.unit??''}호`:''}`);
+  if(r.complex&&!r.unit){
+    const estimates=(catalog.estimatedViewReport??[]).filter(b=>b.complexId===r.complex.id);
+    if(estimates.length){
+      element('h3','동별 지형·높이 적용 전망');
+      for(const b of estimates.sort((a,b)=>Number(a.building)-Number(b.building))){
+        const u=catalog.units.find(u=>u.complexId===r.complex.id&&u.building===b.building&&u.estimatedViewReady&&u.elevation.floor>=2);
+        if(u)link(`${b.building}동 · 지반 ${b.ground.toFixed(1)}m · ${b.estimatedUnits}세대 (${u.unit}호 열기)`,u.estimatedPreview);
+      }
+    }
+  }
   const coverage=catalog.unitCoverage?.find(c=>c.complexId===r.complex?.id);
   if(coverage){
     const p=element('p',`단지 전체: 자료상 ${coverage.expectedUnits??'미상'}호 중 호별 평면도 ${coverage.unitsWithPlanImages}호 연결 · ${coverage.completePlanLookup?'자료상 전수 연결':'전수 연결 미완료'}`);p.className='unit-coverage-status';
@@ -69,6 +81,11 @@ function display(r){
   }
   if(r.preview)link(r.scenario?'비교 시나리오 열기':'연결된 데모 보기',r.preview);
   else if(r.planPreview)link('집 구조 열기',r.planPreview);
+  if(r.estimatedViewReady){
+    const e=r.elevation;
+    element('p',`지반 ${e.ground.toFixed(1)}m · ${e.floor}층 바닥 ${e.floorElevation.toFixed(1)}m · 눈높이 표고 ${e.eyeElevation.toFixed(1)}m (지형 기반, 층고 ${e.floorHeight}m 추정)`);
+    const a=link('이 동·호의 지형·높이 반영 전망',r.estimatedPreview);a.id='estimated-view-link';
+  }
   if(r.gaps?.length)element('p',r.gaps.map(g=>g==='unit-absent-from-complete-inventory'?'완전 대조한 공식 호별 목록에 없음':gapLabels[g]??g).join(' · '));
   if(r.availablePlans?.length){
     let parent=result;

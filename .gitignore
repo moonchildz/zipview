@@ -25,3 +25,10 @@ research/linkage/generated/
 research/linkage/cache/
 research/linkage/providers/
 research/linkage/downloads/
+
+# Downloaded NGII originals and incomplete transfers (local data only).
+mapinfo/*.zip
+mapinfo/*.xml
+mapinfo/*.partial
+down_*/
+종로구/

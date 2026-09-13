@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { readFileSync } from 'node:fs';
 import { satellitePlugin } from './scripts/imagery-server.mjs';
 import {addressPipelinePlugin} from './scripts/address-server.mjs';
+import {planCalibrations} from './src/plan-calibrations.js';
 
 export default defineConfig({
   server: {
@@ -21,6 +22,10 @@ export default defineConfig({
       this.emitFile({ type: 'asset', fileName: sceneFile, source: readFileSync(sceneFile) });
       const correctionFile = 'research/sinchon-prugio/outlook/mapinfo-correction.json';
       this.emitFile({ type: 'asset', fileName: correctionFile, source: readFileSync(correctionFile) });
+      const footprintsFile='research/sinchon-prugio/outlook/building-footprints.json';
+      this.emitFile({type:'asset',fileName:footprintsFile,source:readFileSync(footprintsFile)});
+      const hanshinScene='research/hanshin-hanjin/scene.json';
+      this.emitFile({type:'asset',fileName:hanshinScene,source:readFileSync(hanshinScene)});
       for (const name of ['scene.json', 'README.md', 'unit-layout-research.md', 'unit-lookup-research.md']) {
         const fileName = `research/gyeonghuigung-xi/${name}`;
         this.emitFile({type:'asset',fileName,source:readFileSync(fileName)});
@@ -31,6 +36,10 @@ export default defineConfig({
       }
       const catalog = JSON.parse(readFileSync('research/linkage/generated/catalog.json', 'utf8'));
       const emittedPlans = new Set();
+      for(const c of Object.values(planCalibrations))if(catalog.plans.some(p=>p.trace?.calibrationSha256===c.sha256)){
+        if(emittedPlans.has(c.file))continue;
+        emittedPlans.add(c.file);this.emitFile({type:'asset',fileName:c.file,source:readFileSync(c.file)});
+      }
       for (const plan of catalog.plans.filter(p => p.available && !p.file.startsWith('research/sinchon-prugio/images/'))) {
         if (emittedPlans.has(plan.file)) continue;
         emittedPlans.add(plan.file);

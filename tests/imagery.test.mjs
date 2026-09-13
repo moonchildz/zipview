@@ -1,11 +1,48 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {tilePoint,tileLocation,imageryGrid,groundUV} from '../src/imagery-coordinates.js';
+import {tilePoint,tileLocation,imageryGrid,staticImageryGrid,groundUV} from '../src/imagery-coordinates.js';
 import {localPoint} from '../src/outlook-math.js';
 import {imageryMiddleware} from '../scripts/imagery-server.mjs';
 
 const center = [126.9546759125,37.5611203];
+test('static image footprint uses logical size and works away from the three pilot sites',()=>{
+  const location=[129.16,35.16],grid=staticImageryGrid(location);
+  const [x,y]=tilePoint(...location,18);
+  assert.equal(grid.count*256,640);
+  assert.equal((x-grid.left)/grid.count,.5);
+  assert.equal((y-grid.top)/grid.count,.5);
+  const uv=groundUV(...localPoint(...location,center),center,grid);
+  assert.ok(uv.every(n=>Math.abs(n-.5)<1e-9));
+  assert.ok(Math.abs(groundUV(...localPoint(grid.west,grid.north,center),center,grid)[1]-1)<1e-9);
+});
+
+test('Static Maps accepts validated coordinates, hides the key and bills one bounded image request',async()=>{
+  let calls=0;
+  await withServer({key:'private-key',limit:1,request:async url=>{
+    calls++;assert.equal(url.origin,'https://maps.googleapis.com');
+    assert.equal(url.searchParams.get('center'),'35.16,129.16');
+    assert.equal(url.searchParams.get('zoom'),'18');assert.equal(url.searchParams.get('scale'),'2');
+    assert.equal(url.searchParams.get('size'),'640x640');
+    return new Response(new Uint8Array([1,2,3]),{headers:{'Content-Type':'image/png'}});
+  }},async get=>{
+    const q='?lon=129.16&lat=35.16&zoom=18';
+    const metadata=await get('/api/imagery/static/metadata'+q);
+    const text=await metadata.text();assert.ok(!text.includes('private-key'));
+    assert.equal(JSON.parse(text).width,1280);assert.equal(calls,0);
+    assert.equal((await get('/api/imagery/static/image'+q)).status,200);
+    assert.equal((await get('/api/imagery/static/image'+q)).status,429);
+    for(const bad of ['?lon=&lat=35&zoom=18','?lon=129&lat=91&zoom=18',q+'&key=bad',q+'&zoom=19'])assert.equal((await get('/api/imagery/static/image'+bad)).status,400);
+  });assert.equal(calls,1);
+});
+
+test('Static Maps provider failures do not leak credentials or trigger a fallback',async()=>{
+  let calls=0;
+  await withServer({key:'private-key',request:async()=>{calls++;throw new Error('key=private-key');}},async get=>{
+    const r=await get('/api/imagery/static/image?lon=126.96&lat=37.57&zoom=18');
+    assert.equal(r.status,502);assert.ok(!(await r.text()).includes('private-key'));
+  });assert.equal(calls,1);
+});
 test('imagery Mercator coordinates preserve north/south and scene scale', () => {
   const grid = imageryGrid(center);
   assert.equal(grid.count ** 2,36);

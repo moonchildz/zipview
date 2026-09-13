@@ -1,6 +1,47 @@
 # Two Target Complexes
 
-Updated 2026-09-11. User requested a pause and status report. Work is incomplete; do not resume expansion until requested.
+## Terrain-derived views — 2026-09-12
+
+Implemented and executed `npm run pipeline:elevations`: **Xi2 14 buildings/1148 homes, Sinchon2 10 buildings/426 homes, Hanshin Hanjin205 84 homes**. All1658 source homes now resolve an estimated exterior view, even when the plan image or exact window registration is missing. The ordinary `pipeline:targets` also runs this stage and reports `estimatedComplete` independently from fully verified registration.
+
+Each record carries ground, first-floor/floor/eye elevations, the2.9m floor-height assumption, building-height provenance, and an estimated facade point. Existing Xi204 DEM base49.27736770844799m is preserved. Sinchon uses NGII correction including separate209/210 footprints. Hanshin205 uses the existing regional Mapzen DEM,21 official floors and60.9m assumed building height; its84 official homes all have132.96㎡ exclusive area. The SH32㎡ rental plan is not used for205.
+
+Search results provide a terrain-view link; Sinchon plan views also route their Outlook tab to the selected household. The new route uses50° horizontal FOV, actual available floors in that line, per-dong ground elevation, editable floor/eye heights and site-specific imagery coordinates. Existing plan-registered Xi interior routes remain available. This is usable **estimated exterior/elevation coverage**, not a claim that every plan is already georegistered or that floor elevations were surveyed.
+
+Review: http://127.0.0.1:5173/research/linkage/generated/elevation-review.html
+
+## Latest implementation — 2026-09-12
+
+The user's requested full per-unit direction/reflection and geographic window registration is **not complete**. The work below is implemented and tested; the older checkpoints describe superseded states.
+
+- Recovered Sinchon209 as a distinct building using three address/dong-labelled NGII features, merging the sheet seam into two physical parts. Separated210's eastern wing from the merged OSM outline, excluding209. The two geometries have zero overlapping area. Both Sinchon and Xi views reproject this same correction into their own origins. Official building heights propagate to all parts; bases remain contour estimates. **210's outer boundary is still OSM-based**, not a labelled surveyed footprint.
+- Corrected **45 rental homes in203**: provider images for34AT/34B/49A were terrace-family drawings, while SH's rental guide and the site blueprint identify different rental layouts. They now use distinct SH34A/34B/49A plans, three new models and13 traced openings. The source sheet is cropped for the selected type in the viewer; its original remains accessible. Dimensions are approximate printed wall-line readings.
+- Transferred dimension readings to **22 target homes**:15 34AT homes in207/208 and7 49A homes in209/210. The34B terrace reading is available only in type viewing; it cannot apply to203's different rental layout. Calibration is scoped by source hash and building. Unequal horizontal/vertical raster scales preserve perpendicular metric window-camera insets.
+- `npm run build:footprints` regenerates geometry and a before/after review. Requires Python with numpy, pyproj and shapely; the local mapinfo environment includes them. `ZIPVIEW_PYTHON` can select another interpreter. `pipeline:targets` includes geometry regeneration after source collection.
+
+Review: http://127.0.0.1:5173/research/linkage/generated/footprint-review.html
+
+Examples: `/?site=sinchon&building=203&unit=204` (SH34B),203-205 (SH34A),203-206 (SH49A),207-101 and210-101 (dimension-calibrated terrace plans).
+
+Validation:106 unit tests passed; the final scope/geometry checks passed again after the last guard change. SH three-type source/model/window flows and dimension-reference links passed at1440/390px; the shared target browser suite passed. Multipart209 selection, finite facade geometry and KML MultiGeometry export passed. The production build includes the footprint correction and every active dimension/source image. These checks establish the implemented paths, not all-home geographic accuracy.
+
+Full completion still needs per-floor plans that show **unit numbers, entrance/core and opening positions together**; the available type drawings, whole-site blueprints and unit-stack charts do not establish all those correspondences. Existing Xi interior routes remain106; the remaining Xi models have not been created by this change. Exact84F/F1 assignment and FFL/vertical opening data remain missing as described in `PLACEMENT-DATA-GAPS.md`.
+
+Additional collection on 2026-09-12: SH original architectural sheets and dimensioned guide, Sinchon209 terrace detail, three reposted dimension plans, Xi84F photos/plan and Dongso-mun Hanjin rental drawings are now downloaded. See [source review and commands](ADDITIONAL-EVIDENCE.md). These are acquired references, not completed model registration.
+
+Updated 2026-09-12. User resumed work: complete both target complexes first, then extend to Seongbuk-gu Hanshin Hanjin apartment building 205. The second site is queued; no completion of either current target is claimed.
+
+## Local restoration and environment separation, 2026-09-12
+
+The current Windows workspace now has the national inventory ZIP and verified complete CSV extraction, both official site blueprints, official building records, and supplemental Xi 77A/116A images. The table below was reproduced locally, not merely copied from the previous machine's report. All 1,574 target household identities are reachable; 1,559 have plan images. Xi's 15 ambiguous 84F/F1 units remain unresolved.
+
+`npm run pipeline:targets` restores missing target sources, compiles the index, and runs the target audit. `--offline` uses local files only. Exit code 2 means the target flow is incomplete, even if collection and compilation succeeded. `generated/target-pipeline.json` records the executed stages and result. This command does not turn provisional geometry or incomplete window evidence into a verified view.
+
+`src/neighborhood.js` now separates a regional snapshot from the default home/window selection and caches source requests, including concurrent requests. Outlook uses that store; facade adapters receive independent working data, so changing one view cannot mutate a later view's cached geometry. Failed requests can be retried. This is shared source-data loading within a page, not yet shared GPU geometry, cross-page regional tiling, or geographic placement of all interiors.
+
+Fixed a specific building crosswalk gap: the source label `208동` was excluded by numeric-only matching. It now receives the official 3-floor, 11.52 m building height within the correct complex. The catalog also retains official height/level metadata and uses the same terrain correction as the renderer, including its provisional base-elevation source. Terrain elevation is not replaced by that building height. The Sinchon 209/210 geometry conflict is still unresolved: the supplied NGII review contains three polygons labelled 209동 while OSM has a combined-looking 210 outline. No nearest-building reassignment was made.
+
+Validation: 98 unit tests passed, including cache isolation/retry and scoped dong-label normalization; target-flow browser samples passed at 1440 and 390 pixels. These checks do not establish accurate geographic placement of every window. Next required work is still the source-based plan registration, floor elevations, missing Xi interior traces, and shared window scene listed below. Hanshin Hanjin 205 follows completion of those tasks.
 
 | Target | Official buildings | Households | Indexed actual units | Plan images linked | Indoor model route |
 | --- | ---: | ---: | ---: | ---: | ---: |

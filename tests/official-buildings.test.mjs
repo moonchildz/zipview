@@ -1,8 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {TARGET_SITES,compileOfficialSites,applyOfficialBuildingFacts} from '../src/official-buildings.js';
+import {TARGET_SITES,compileOfficialSites,applyOfficialBuildingFacts,buildingNumber} from '../src/official-buildings.js';
 
 const target=TARGET_SITES[0];
+test('dong suffix is normalized within a site; addresses and annex labels are not building identities',()=>{
+  assert.equal(buildingNumber('208동'),'208');assert.equal(buildingNumber(' 208 동 '),'208');
+  assert.equal(buildingNumber('208동 상가'),null);assert.equal(buildingNumber('송월길 99'),null);
+  const scene={buildings:[{name:'208동',siteSource:target.siteSource,height:8.7,base:50.201}]};
+  assert.equal(applyOfficialBuildingFacts(scene,[{...target,facts:[{building:'208',height:11.52,levels:3}]}]),1);
+  assert.equal(scene.buildings[0].height,11.52);assert.equal(scene.buildings[0].base,50.201);
+});
 const row=building=>({building,bldrgstSeqno:`registry-${building}`,rdnmadr:target.address,detailSource:'https://www.hub.go.kr/portal/gis/bld/idx-bld-detail.do',households:10,levels:5,heightMeters:17});
 test('official scope excludes the other Sinchon phase and requires every target building',()=>{
   const snapshot={checkedAt:'2026-09-11',targets:[{id:target.id,address:target.address,status:'complete-search',buildings:[row('105'),...target.buildings.map(row)]}]};

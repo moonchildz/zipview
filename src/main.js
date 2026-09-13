@@ -31,12 +31,14 @@ function displayPlan(plan){
 }
 const openingToolbar=document.createElement('div');
 openingToolbar.id='opening-toolbar';openingToolbar.className='opening-toolbar';
-openingToolbar.innerHTML='<label for="opening-select"><i data-lucide="app-window"></i>창문</label><select id="opening-select" aria-label="창문 선택"></select><span id="opening-status" role="status"></span>';
+openingToolbar.innerHTML='<label for="opening-select"><i data-lucide="app-window"></i>창문</label><select id="opening-select" aria-label="창문 선택"></select><span id="opening-status" role="status"></span><a id="calibration-evidence" target="_blank" rel="noopener" hidden>치수 근거 도면</a>';
 $('#scene-panel').before(openingToolbar);
 const stage=document.createElement('div');stage.className='plan-image-stage';
 $('#image-panel').append(stage);stage.append($('#image-link'));
 const svgNS='http://www.w3.org/2000/svg',openingOverlay=document.createElementNS(svgNS,'svg');
 openingOverlay.id='plan-openings';openingOverlay.setAttribute('aria-label','원본 도면의 창문 위치');stage.append(openingOverlay);
+const croppedReference=document.createElementNS(svgNS,'svg'),croppedImage=document.createElementNS(svgNS,'image');
+croppedReference.id='cropped-reference';croppedReference.style.cssText='width:100%;height:100%;display:none';croppedReference.append(croppedImage);$('#image-link').append(croppedReference);
 try { scene = new ApartmentScene($('#canvas-host'),{onWindow:selectWindow}); }
 catch (error) { graphicsError = true; console.error(error); }
 function selectWindow(id){
@@ -66,11 +68,19 @@ function updateOpenings(){
     g.addEventListener('keydown',e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();selectWindow(w.id);}});openingOverlay.append(g);
   }
   $('#opening-status').textContent=selectedModel?'원본 이미지 판독 · 창 높이·실제 방위 미확인':'';
+  const calibration=selectedModel?.calibration;
+  $('#calibration-evidence').hidden=!calibration;
+  if(calibration){$('#calibration-evidence').href=`/${calibration.file}`;$('#opening-status').textContent='도면 치수로 크기 보정 · 창 높이·실제 방위 미확인';}
 }
-$('#reference-image').addEventListener('load',()=>{
+function updateReferenceCrop(){
   const size=selectedModel?.source?.imageSize??[$('#reference-image').naturalWidth,$('#reference-image').naturalHeight];
-  openingOverlay.setAttribute('viewBox',`0 0 ${size[0]} ${size[1]}`);
-});
+  const crop=view==='plan'?selectedPlan.crop:null;
+  const box=crop?`${crop.left-30} ${crop.top-30} ${crop.right-crop.left+60} ${crop.bottom-crop.top+60}`:`0 0 ${size[0]} ${size[1]}`;
+  openingOverlay.setAttribute('viewBox',box);
+  croppedReference.style.display=crop?'block':'none';$('#reference-image').style.display=crop?'none':'block';
+  if(crop){croppedReference.setAttribute('viewBox',box);croppedReference.setAttribute('aria-label',`${selectedPlan.id} 선택 평면`);croppedImage.setAttribute('href',$('#reference-image').src);croppedImage.setAttribute('width',size[0]);croppedImage.setAttribute('height',size[1]);}
+}
+$('#reference-image').addEventListener('load',updateReferenceCrop);
 
 for (const building of complex.buildings) $('#building').add(new Option(`${building}동`, building));
 $('#building').value = '206';
@@ -167,6 +177,7 @@ function updateRooms() {
 }
 
 function showView(next) {
+  if(next==='outlook'&&selection?.estimatedPreview&&!selection.comparison&&!selection.scenario){location.href=selection.estimatedPreview;return;}
   view = next;
   $$('.tabs button').forEach(b => { b.setAttribute('aria-selected', String(b.dataset.view === view)); b.tabIndex = b.dataset.view === view ? 0 : -1; });
   $('#scene-panel').hidden = view !== '3d';
@@ -192,6 +203,7 @@ function showView(next) {
     $('#reference-image').src = src;
     $('#reference-image').alt = view === 'site' ? '신촌푸르지오 분양 당시 단지 배치도 및 동호수 배치표' : `${selectedPlan.id} ${selectedPlan.kind} 원본 평면도`;
     $('#image-link').href = src;
+    updateReferenceCrop();
   }
   const captions = {
     '3d': '벽체·창호 위치는 이미지 판독 초안, 길이·높이는 추정치',
@@ -203,7 +215,7 @@ function showView(next) {
 }
 
 function renderSelection() {
-  selectedModel=modelForPlan(selectedPlan);
+  selectedModel=modelForPlan(selectedPlan,selection??{});
   $('#unit-title').textContent = selection ? `${selection.building}동 ${selection.unit}호` : `${selectedPlan.id} 타입 열람`;
   $('#selection-kind').textContent = selection?.scenario ? '비교 시나리오' : selection?.sourceStatus?.startsWith('provider-') ? '공급자 호별 자료' : selection ? '분양표 기준' : '세대 연결 없음';
   $('#match-status').textContent = selection?.scenario ? '4호 라인 59D 추정 · 세대별 확인 전' : selection ? `호별 타입 · ${selectedPlan.kind} 도면 연결` : '타입 도면만 선택됨';
