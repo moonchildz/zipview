@@ -88,7 +88,7 @@ export function createAddressPipeline({fetchImpl=fetch,refresh=false,maxRequests
       return result;
     })();pending.set(id,work);try{return await work;}catch(e){pending.delete(id);throw e;}
   }
-  async function run(input,{providerId,strictAddress=false}={}){
+  async function run(input,{providerId,strictAddress=false,searchFallbacks=[]}={}){
     const request=splitAddressInput(input);let candidate,search;
     if(providerId){if(!/^\d+$/.test(providerId))throw new Error('Invalid provider ID');candidate={providerId};}
     else{
@@ -98,6 +98,18 @@ export function createAddressPipeline({fetchImpl=fetch,refresh=false,maxRequests
       if(strictAddress) {
         const exact=search.candidates.filter(c=>canonicalRoadAddress(c.address)===canonicalRoadAddress(request.address));
         candidate=exact.length===1&&search.total<=search.candidates.length?exact[0]:null;
+      }
+      if(!candidate&&strictAddress){
+        const queries=[...new Set(searchFallbacks.filter(q=>typeof q==='string'&&q.trim()&&q!==request.address))].slice(0,3);
+        for(const query of queries){
+          onProgress({stage:'fallback-search',address:request.address});
+          const alternative=parseSearch(await api('land-complex/serch/intgraSerch',{'검색설정명':'SRC_HSCM','검색키워드':query,'출력갯수':'20','페이지설정값':'1'}));
+          const exact=alternative.candidates.filter(c=>canonicalRoadAddress(c.address)===canonicalRoadAddress(request.address));
+          search={total:Math.max(search.total,alternative.total),candidates:[...new Map([...search.candidates,...alternative.candidates].map(c=>[c.providerId,c])).values()]};
+          // Search names only discover candidates; never accept a name-only match.
+          const allExact=search.candidates.filter(c=>canonicalRoadAddress(c.address)===canonicalRoadAddress(request.address));
+          if(exact.length===1&&allExact.length===1&&alternative.total<=alternative.candidates.length){candidate=exact[0];break;}
+        }
       }
     }
     if(!candidate)return {request,status:search.total?'ambiguous-address':'address-not-found',candidates:search.candidates,total:search.total,requests,cacheHits};
