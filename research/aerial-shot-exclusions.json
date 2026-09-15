@@ -1,0 +1,5 @@
+{
+  "imageSize": [864, 730],
+  "note": "Manually marked UI labels only, not tree annotations. Coordinates refer to the user's shot.png.",
+  "boxes": [[307, 5, 353, 52], [429, 170, 474, 215], [558, 325, 603, 372], [794, 135, 841, 182], [803, 0, 864, 71], [732, 502, 820, 556], [671, 0, 698, 7]]
+}

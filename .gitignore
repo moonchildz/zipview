@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .tools/
+__pycache__/
+Ultralytics/
 .vite/
 *.log
 .env*
