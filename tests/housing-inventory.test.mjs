@@ -45,3 +45,18 @@ test('contradictory provider evidence remains a conflict; duplicate official ide
   args.snapshot.targets[0].units.push(args.snapshot.targets[0].units[0]);
   assert.throws(()=>connectHousingInventory(args),/Duplicate official/);
 });
+
+test('reconciliation replaces all normalized historical candidates and preserves unrelated order',()=>{
+  const args=input();
+  args.units=[
+    {complexId:'b',building:'201',unit:'102',source:'other'},
+    {complexId:'a',building:'0201',unit:'0102',planId:'old',source:'historical'},
+    {complexId:'a',building:'201',unit:'102',planId:'older',source:'historical'},
+    {complexId:'a',building:'201',unit:'999',source:'historical'}
+  ];
+  const r=connectHousingInventory(args);
+  assert.deepEqual(r.units.map(u=>[u.complexId,u.unit]),[['b','102'],['a','999'],['a','102'],['a','201']]);
+  assert.equal(r.units[2].supersededCandidates.length,2);
+  assert.equal(args.units.length,4);
+  assert.equal(args.units[1].officialUnit,undefined);
+});

@@ -3,13 +3,20 @@ import {unitKey} from './unit-linkage.js';
 // A displayed area is not a unit identity. Require the official inventory,
 // complete building totals, unique provider type, and the provider's type total.
 export function connectHousingInventory({snapshot,sites,plans,units,lineAssociations=[]}) {
-  const output=units.map(u=>({...u})),reports=[];
+  let output=units.map(u=>({...u}));
+  const reports=[];
   for(const target of snapshot?.targets??[]){
     const site=sites.find(s=>s.id===target.id);
     if(!site?.inventoryComplete)continue;
     const rows=target.units.filter(u=>site.buildings.includes(u.building));
     const keys=new Set(rows.map(u=>unitKey(target.id,u.building,u.unit)));
     if(keys.size!==rows.length)throw new Error(`Duplicate official housing identity: ${target.id}`);
+    const byUnit=new Map(),removed=new Set();
+    for(const u of output)if(u.complexId===target.id){
+      const key=unitKey(u.complexId,u.building,u.unit);
+      if(!byUnit.has(key))byUnit.set(key,[]);
+      byUnit.get(key).push(u);
+    }
     const complete=site.facts.every(b=>rows.filter(u=>u.building===b.building).length===b.households);
     const report={complexId:target.id,officialUnits:rows.length,completeInventory:complete,corroborated:0,areaLinked:0,unresolved:[],conflicts:[]};
     const candidates=plans.filter(p=>p.complexId===target.id&&p.providerAreaId);
@@ -18,7 +25,7 @@ export function connectHousingInventory({snapshot,sites,plans,units,lineAssociat
     for(const row of rows){const area=displayedArea(row.exclusiveArea);officialCounts.set(area,(officialCounts.get(area)??0)+1);}
     for(const row of rows){
       const key=unitKey(target.id,row.building,row.unit);
-      const previous=output.filter(u=>unitKey(u.complexId,u.building,u.unit)===key);
+      const previous=byUnit.get(key)??[];
       const evidence={...row,source:snapshot.source,sourceFile:snapshot.sourceFile,sha256:snapshot.sha256};
       const areaMatches=candidates.filter(p=>Math.round(p.area*100)===displayedArea(row.exclusiveArea));
       const identities=new Set(areaMatches.map(p=>p.providerAreaId));
@@ -55,12 +62,13 @@ export function connectHousingInventory({snapshot,sites,plans,units,lineAssociat
           providerHouseholds:plan.providerHouseholds,source:plan.source,lineSources:linePlans.length?lineAssociations.filter(l=>l.complexId===target.id&&l.building===row.building&&l.line===Number(row.unit)%100).map(l=>l.source):[]}:null};
       // Reconcile only historical candidates. Contradictory independently sourced
       // unit links above are retained as conflicts, never overwritten.
-      for(let i=output.length-1;i>=0;i--)if(unitKey(output[i].complexId,output[i].building,output[i].unit)===key)output.splice(i,1);
+      for(const old of previous)removed.add(old);
       output.push(next);
       if(matched)report.areaLinked++;
       else report.unresolved.push({building:row.building,unit:row.unit,area:row.exclusiveArea,
         reason:!unique?'ambiguous-provider-area':!countAgrees?'type-total-unverified':'line-type-conflict',candidateTypes:[...new Set(areaMatches.map(p=>p.displayType))]});
     }
+    output=output.filter(u=>!removed.has(u));
     reports.push(report);
   }
   return {units:output,reports};

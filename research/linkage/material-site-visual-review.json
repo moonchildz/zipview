@@ -1,0 +1,30 @@
+{
+  "reviewedAt": "2026-09-22",
+  "method": "Direct visual inspection of each of the 23 first site-drawing candidates; original files preserved",
+  "scope": "Presence of visible source information only. Not full type/unit mapping or engineering accuracy verification.",
+  "rows": [
+    {"providerId":"1466","kind":"partial-site-drawing","buildings":true,"floors":true,"note":"거꾸로 된 스캔. 111/202동 일부와 층수·표고 표기. 전체 단지 도면으로 간주 불가."},
+    {"providerId":"15946","kind":"exterior-render","note":"엑셀 화면에 붙인 조감도. 배치도라는 분류와 실제 내용이 다름."},
+    {"providerId":"1758","kind":"location-map","buildings":true,"note":"지도 캡처이며 임대 구역 중심. 별도 배치도 후보 추가 판독 필요."},
+    {"providerId":"22105","kind":"partial-site-drawing","buildings":true,"note":"일부 동 출입구 및 설비 표시. 전체 단지·호 라인 불명."},
+    {"providerId":"22338","kind":"partial-site-drawing","buildings":true,"note":"303~308동과 임대 구역 도식. 호 라인 미표시."},
+    {"providerId":"22461","kind":"exterior-render","note":"아파트 조감도. 동번호·호 라인 자료로 사용 불가."},
+    {"providerId":"28011","kind":"site-drawing","buildings":true,"north":true,"types":true,"floors":true,"note":"타입별 위치와 층수 일부 표기. 호 라인 대응·원본 글자 해상도 확인 필요."},
+    {"providerId":"29284","kind":"site-drawing","buildings":true,"north":true,"note":"배치도 및 작은 기호 존재. 호수·타입 문자의 판독성 확인 필요."},
+    {"providerId":"29959","kind":"site-drawing","buildings":true,"north":true,"unitLines":true,"types":true,"note":"동번호·호 라인 번호·면적 범례 존재. 층별 예외와 실치수 추가 확인 필요."},
+    {"providerId":"311879","kind":"site-drawing","buildings":true,"north":true,"unitLines":true,"types":true,"note":"101/102동 호 라인·타입 범례 존재. 다락방·테라스 예외 표시가 있어 층별 대응 확인 필요."},
+    {"providerId":"31482","kind":"site-sign-photo","buildings":true,"note":"현장 안내판 사진. 동번호는 있으나 호 라인·높이 없음."},
+    {"providerId":"31582","kind":"site-drawing","buildings":true,"north":true,"unitLines":true,"types":true,"floors":true,"note":"동·호 라인·층수·평형 표기 존재. 저해상도와 공급/전용 타입 표기 차이 대조 필요."},
+    {"providerId":"32071","kind":"site-drawing","buildings":true,"types":true,"floors":true,"note":"동번호·타입 위치·층수·외곽 표고 표기. 호수 대응과 지리 방향 확인 필요."},
+    {"providerId":"32148","kind":"site-drawing","buildings":true,"north":true,"note":"단지 전체 동번호 배치도. 호 라인 번호·타입 분할은 확인되지 않음."},
+    {"providerId":"32307","kind":"site-drawing","buildings":true,"unitLines":true,"note":"호 라인 번호 존재. 북쪽 표시·타입 범례는 이 이미지에서 확인 안 됨."},
+    {"providerId":"33946","kind":"site-drawing","buildings":true,"note":"동번호 배치도이나 화질·워터마크 문제. 호 라인 없음."},
+    {"providerId":"37020","kind":"site-drawing","buildings":true,"north":true,"unitLines":true,"types":true,"note":"동번호·호 라인·타입 범례 존재. 전체 타입/층별 대응 검증 전."},
+    {"providerId":"37606","kind":"site-drawing","buildings":true,"north":true,"unitLines":true,"types":true,"note":"호 라인 번호·타입 색상 존재. 범례 세대수는 일반분양 867세대로 전체 1859세대와 구분 필요."},
+    {"providerId":"39203","kind":"site-drawing","buildings":true,"north":true,"note":"동번호 및 커뮤니티 배치도. 호 라인 번호 없음."},
+    {"providerId":"39530","kind":"site-drawing","north":true,"note":"작은 해상도의 배치도. 동번호/타입 글자를 신뢰성 있게 판독하기 어려움."},
+    {"providerId":"39634","kind":"site-drawing","buildings":true,"north":true,"unitLines":true,"types":true,"note":"호 라인·타입별 위치 및 범례 존재. 작은 번호와 특수층 대응 확인 필요."},
+    {"providerId":"39643","kind":"site-sign-photo","buildings":true,"note":"현장 안내판 사진. 동번호는 있으나 호 라인·높이 없음."},
+    {"providerId":"48900","kind":"site-drawing","buildings":true,"north":true,"note":"동번호 배치도. 타입 범례는 행복주택 35세대만 표기되어 전체 280세대와 구분 필요."}
+  ]
+}

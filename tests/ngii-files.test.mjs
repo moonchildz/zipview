@@ -40,11 +40,19 @@ test('NGII XML identifies edition without confusing spatial OBJECTID with metada
 test('NGII downloaded file names cannot escape the output folder',()=> {
   assert.equal(safeFilename('(B010)수치지도_376082071_2025_123.zip'),'(B010)수치지도_376082071_2025_123.zip');
   for(const name of ['../x.zip','..\\x.zip','C:\\x.zip','x.zip:stream','CON.zip','a.exe','x.zip.'])assert.throws(()=>safeFilename(name));
+  assert.throws(()=>safeFilename('map.ngi'));
+  assert.equal(safeFilename('map.ngi',{allowNgi:true}),'map.ngi');
+  assert.equal(safeFilename('map.nda',{allowNgi:true}),'map.nda');
+  assert.throws(()=>safeFilename('../map.ngi',{allowNgi:true}));
 });
 
 test('NGII ISO export validates source citation and V2 catalogue without legacy fields',()=> {
   const sheet=normalizeSheet({...rawSheet,num:'377051353',name:'성동1353',gosiYer:'2026-0189'},'중랑구');
   assert.equal(metadataMatches(isoXml,sheet),true);
+  const compactTitle=isoXml.replace(/수치지형도[^<]*?(?=\s*-\s*도엽번호)/,'수치지형도(시험지역)');
+  assert.equal(metadataMatches(compactTitle,sheet),true,'Parenthesized region needs no separating space');
+  assert.equal(metadataMatches(compactTitle.replace('377051353','377051354'),sheet),false);
+  assert.equal(metadataMatches(compactTitle.replace('1/1,000','1/5,000'),sheet),false);
   for(const change of [['377051353','377051354'],['1/1,000','1/5,000'],['제작년도 : 2025','제작년도 : 2024'],
     ['2026-0189','2025-3996'],['수치지도 2.0','수치지도 1.0'],['제작년도 : 2025','촬영년도 : 2025']]) {
     assert.equal(metadataMatches(isoXml.replace(...change),sheet),false,change.join(' => '));

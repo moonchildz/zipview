@@ -26,6 +26,8 @@
     "verify:browser": "node tests/browser.mjs",
     "collect:seoul": "node scripts/collect-seoul.mjs",
     "collect:mapinfo": "node scripts/collect-ngii.mjs",
+    "collect:national": "node scripts/national-collection.mjs",
+    "collect:satellite": "node scripts/collect-cas-imagery.mjs",
     "import:mapinfo": "node scripts/import-ngii-downloads.mjs",
     "collect:seoul-terrain": "node scripts/collect-seoul-terrain.mjs",
     "build:seoul": "node --max-old-space-size=8192 scripts/build-seoul.mjs",
@@ -33,6 +35,13 @@
     "verify:seoul": "node scripts/verify-seoul.mjs",
     "register:plan": "node scripts/register-plan.mjs",
     "extract:charts": "node scripts/extract-image-charts.mjs && node scripts/build-linkage.mjs"
+    ,"models:prepare": ".tools/aerial-python/Scripts/python.exe scripts/apartment-model-work.py prepare"
+    ,"models:run": ".tools/aerial-python/Scripts/python.exe scripts/apartment-model-work.py run"
+    ,"models:status": ".tools/aerial-python/Scripts/python.exe scripts/apartment-model-work.py status"
+    ,"models:sites": ".tools/aerial-python/Scripts/python.exe scripts/build-apartment-site-drafts.py"
+    ,"units:build": ".tools/aerial-python/Scripts/python.exe scripts/build-national-unit-registry.py"
+    ,"units:serve": ".tools/aerial-python/Scripts/python.exe scripts/serve-national-units.py"
+    ,"units:refresh-links": ".tools/aerial-python/Scripts/python.exe scripts/refresh-national-unit-links.py && .tools/aerial-python/Scripts/python.exe scripts/audit-national-unit-readiness.py"
   },
   "dependencies": {
     "lucide": "^0.468.0",

@@ -6,8 +6,8 @@ import { crc32 } from 'node:zlib';
 import yauzl from 'yauzl';
 import { load } from 'cheerio';
 
-export function normalizeSheet(item, district) {
-  if (String(item.scale) !== '1000' || !/^\d{9}$/.test(item.num) || !/^\d{4}$/.test(item.makeYer)
+export function normalizeSheet(item, district, scale=1000) {
+  if (Number(scale)!==1000 || String(item.scale) !== '1000' || !/^\d{9}$/.test(item.num) || !/^\d{4}$/.test(item.makeYer)
       || !Number.isInteger(Number(item.objectid)) || item.historyNo == null || !item.name) {
     throw new Error('NGII 도엽 응답 형식이 변경되었습니다.');
   }
@@ -16,7 +16,7 @@ export function normalizeSheet(item, district) {
     year: String(item.makeYer), notice: String(item.gosiYer), districts: [district],
     ...(['minx','miny','maxx','maxy'].every(k=>item[k]!=null&&Number.isFinite(Number(item[k])))
       ? {bounds5179:['minx','miny','maxx','maxy'].map(k=>Number(item[k]))} : {}),
-    status: 'pending', payload: { orderTp: '3', mapScale: '1000', mapNo: item.num,
+    status: 'pending', payload: { orderTp: '3', mapScale: String(scale), mapNo: item.num,
       mapName: item.name, mapHistoryNo: String(item.historyNo), mapKind: '0' } };
 }
 
@@ -48,15 +48,16 @@ export function nextBatch(sheets, size = 100) {
   return sheets.filter(x=>x.status === 'pending').slice(0,size);
 }
 
-export function safeFilename(name) {
+export function safeFilename(name,{allowNgi=false}={}) {
   if (!name || name !== path.win32.basename(name) || name !== path.posix.basename(name)
       || /[<>:"|?*\x00-\x1f]/.test(name) || /[ .]$/.test(name)
       || /^(con|prn|aux|nul|com\d|lpt\d)(\.|$)/i.test(name)
-      || !/\.(zip|xml)$/i.test(name)) throw new Error('예상하지 못한 다운로드 파일명');
+      || !(allowNgi?/\.(zip|xml|ngi|nda)$/i:/\.(zip|xml)$/i).test(name)) throw new Error('예상하지 못한 다운로드 파일명');
   return name;
 }
 
 export function metadataMatches(xml, sheet, {ignoreName=false}={}) {
+  if(String(sheet.payload?.mapScale??1000)!=='1000')return false;
   const $ = load(xml, {xmlMode:true});
   const value = name => $(name).text().trim();
   const root=$.root().children().first();
@@ -69,7 +70,7 @@ export function metadataMatches(xml, sheet, {ignoreName=false}={}) {
     const titles=at(citation,'title','CharacterString');
     if(citation.length!==1||titles.length!==1)return false;
     const title=titles.text().trim().replaceAll(',','');
-    const match=title.match(/^1\/1000\s+수치지형도\s+.+?\s*-\s*도엽번호\s*:\s*(\d{9})$/);
+    const match=title.match(/^1\/(1000|5000)\s+수치지형도(?:\s+.+?|\s*\([^)]*\))\s*-\s*도엽번호\s*:\s*(\d{8,9})$/);
     const details=at(citation,'otherCitationDetails','CharacterString').toArray().map(n=>$(n).text().trim());
     const detail=label=> {
       const values=details.filter(t=>t.startsWith(label+' :')).map(t=>t.slice(t.indexOf(':')+1).trim());
@@ -79,11 +80,11 @@ export function metadataMatches(xml, sheet, {ignoreName=false}={}) {
     const catalogue=at(root,'contentInfo','MD_FeatureCatalogueDescription','featureCatalogureCitation','CI_Citation','title','CharacterString');
     // ISO exports omit the old map name/history fields. Only latest-history (0)
     // catalog requests qualify; identity comes from sheet, scale, edition and V2 catalogue.
-    return Boolean(match && match[1]===sheet.number && detail('제작년도')===sheet.year
+    return Boolean(match && match[1]===String(sheet.payload?.mapScale??1000) && match[2]===sheet.number && detail('제작년도')===sheet.year
       && detail('고시번호')===sheet.notice && sheet.history==='0'
       && catalogue.length===1 && catalogue.text().replace(/\s/g,'')==='수치지도2.0지형지물속성목록');
   }
-  return value('지도종류코드') === '수치지도2.0' && value('축척코드').replaceAll(',','') === '1:1000'
+  return value('지도종류코드') === '수치지도2.0' && value('축척코드').replaceAll(',','') === '1:'+String(sheet.payload?.mapScale??1000)
     && value('도엽번호') === sheet.number && value('제작년도') === sheet.year
     // Search-layer OBJECTID is not the metadata table's 지도순번.
     && (ignoreName || value('도엽명') === sheet.name) && value('지도이력번호') === sheet.history
@@ -117,7 +118,8 @@ export async function verifyZip(filename) {
     });
   } finally {zip.close();}
   if (![...layers.values()].some(exts=>['.shp','.shx','.dbf','.prj'].every(ext=>exts.has(ext)))) {
-    throw new Error('SHP/SHX/DBF/PRJ 레이어가 없는 ZIP (NGI 형식이면 별도 변환 필요)');
+    const error=new Error('SHP/SHX/DBF/PRJ 레이어가 없는 ZIP (NGI 형식이면 별도 변환 필요)');
+    error.code='NGII_INCOMPLETE_LAYERS';throw error;
   }
   const hash=createHash('sha256');
   for await (const chunk of createReadStream(filename)) hash.update(chunk);
@@ -177,6 +179,14 @@ export async function reconcileFiles(sheets, output, cache = new Map()) {
         }
         if(verified)break;
       } catch(error) {
+        // A fully readable archive with missing sidecars is not an active transfer.
+        // Keep it as a gap rather than blocking all later batches indefinitely.
+        if(error.code==='NGII_INCOMPLETE_LAYERS') {
+          const stats=await Promise.all([fs.stat(xmlPath),fs.stat(zipPath)]).catch(()=>null);
+          if(stats&&Date.now()-Math.max(...stats.map(s=>s.mtimeMs))>=10000) {
+            review={reason:'incomplete-layers',zip:zipPath,xml:xmlPath,message:error.message,checkedAt:new Date().toISOString()};
+          }
+        }
         // Native transfers may still be writing the file. Recheck on the next pass.
         if(error.code !== 'ENOENT') cache.delete(zipPath);
       }

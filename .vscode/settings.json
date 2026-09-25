@@ -1,0 +1,49 @@
+{
+  "files.watcherExclude": {
+    "**/research/linkage/downloads/**": true,
+    "**/research/linkage/generated/**": true,
+    "**/research/linkage/cache/**": true,
+    "**/research/linkage/providers/**": true,
+    "**/research/seoul/raw/**": true,
+    "**/research/seoul/generated/**": true,
+    "**/research/osm/raw/**": true,
+    "**/research/osm/generated/**": true,
+    "**/verification/**": true,
+    "**/mapinfo/**": true,
+    "**/satellite/**": true,
+    "**/down_*/**": true,
+    "**/.tools/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true
+  },
+  "search.exclude": {
+    "**/research/linkage/downloads/**": true,
+    "**/research/linkage/generated/**": true,
+    "**/research/linkage/cache/**": true,
+    "**/research/linkage/providers/**": true,
+    "**/research/seoul/raw/**": true,
+    "**/research/seoul/generated/**": true,
+    "**/research/osm/raw/**": true,
+    "**/research/osm/generated/**": true,
+    "**/verification/**": true,
+    "**/mapinfo/**": true,
+    "**/satellite/**": true,
+    "**/down_*/**": true,
+    "**/.tools/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true
+  },
+  "files.exclude": {
+    "**/research/linkage/downloads": true,
+    "**/research/linkage/cache": true,
+    "**/research/linkage/providers": true,
+    "**/research/seoul/raw": true,
+    "**/research/osm/raw": true,
+    "**/.tools": true
+  },
+  "files.associations": {
+    "**/research/linkage/downloads/**/*.html": "plaintext",
+    "**/research/linkage/generated/**/review.html": "plaintext"
+  },
+  "editor.largeFileOptimizations": true
+}

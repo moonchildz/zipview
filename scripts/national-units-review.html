@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>전국 단지·동·호수 자료 현황</title>
+<style>
+body{font:15px system-ui,sans-serif;color:#1a2d3c;background:#f4f7f9;margin:0;padding:24px;line-height:1.55}
+main{max-width:1350px;margin:auto}h1{margin:0 0 8px}p{margin:8px 0 20px}input,select,button{font:inherit;padding:8px 10px;border:1px solid #b6c5ce;border-radius:5px;background:white}input{min-width:280px}button{cursor:pointer}button:disabled{opacity:.45;cursor:default}.panel{background:white;border:1px solid #dbe4e9;border-radius:8px;padding:18px;margin:16px 0}table{width:100%;border-collapse:collapse;background:white}th,td{border-bottom:1px solid #e3e9ec;text-align:left;vertical-align:top;padding:9px}th{background:#eaf1f5}small,.muted{color:#586d79}small{display:block}#units{display:none}.good{color:#16703f}.warn{color:#986212}.bad{color:#a73b30}a{color:#126296}#message{min-height:25px}
+</style>
+<main>
+<h1>전국 단지·동·호수 자료 현황</h1>
+<p>2025년 공동주택 공시가격 원본의 동·호수 목록입니다. 평면도 연결은 현재 저장된 제공처 자료의 후보이며, 실내 모델이나 해당 호수의 실제 창문·조망이 검증되었다는 뜻은 아닙니다. 원본에 없는 신축·비공시 세대는 별도 수집이 필요합니다.</p>
+<div class="panel"><strong id="summary">색인 상태 확인 중…</strong><small id="coverage"></small><small id="updated"></small><p><a href="/complex-readiness.csv">전체 단지별 자료 공백 CSV</a></p></div>
+<div class="panel">
+  <label>단지명 또는 도로명 주소 <input id="query" placeholder="예: 경희궁자이"></label>
+  <label>시도 <select id="province"><option value="">전체</option></select></label>
+  <button id="search">검색</button>
+  <p id="message" class="muted"></p>
+  <table><thead><tr><th>단지 원본명</th><th>주소</th><th>동</th><th>호수 행</th></tr></thead><tbody id="complexes"></tbody></table>
+  <p><button id="prev">이전</button> <span id="page"></span> <button id="next">다음</button></p>
+</div>
+<div id="units" class="panel">
+  <h2 id="complex-title"></h2><p id="complex-address" class="muted"></p>
+  <label>동 이름 <input id="building" placeholder="비우면 전체, 원본 동코드는 #1처럼 입력"></label><button id="unit-search">조회</button>
+  <p id="unit-count"></p>
+  <table><thead><tr><th>동</th><th>호수</th><th>전용면적</th><th>현재 평면도 자료 연결</th></tr></thead><tbody id="unit-rows"></tbody></table>
+  <p><button id="unit-prev">이전</button> <span id="unit-page"></span> <button id="unit-next">다음</button></p>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id), esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let cOffset=0,cTotal=0,uOffset=0,uTotal=0,selected='';
+async function api(path){const response=await fetch(path);const value=await response.json();if(!response.ok)throw Error(value.error||response.status);return value}
+function fail(error){$('message').textContent=error.message}
+async function status(){const value=await api('/api/status');const p=value.progress,s=value.summary,r=value.readiness;$('summary').textContent=s?`2025년 원본 ${s.sourceRows.toLocaleString()}행 · 단지 그룹 ${s.complexGroups.toLocaleString()}개 · 현재 제공처 연결 ${s.providerLinkedUnits.toLocaleString()}호`:`색인 ${p.stage}: ${(p.rows||0).toLocaleString()}행 처리`;$('coverage').textContent=r?`호수·면적·이미지 일치 후보 ${r.planCandidateUnits.toLocaleString()}행 · 평면도 후보 없음 ${r.noPlanCandidateUnits.toLocaleString()}행 · 동 이름이 원본에 없는 행 ${r.rowsWithoutBuildingName.toLocaleString()}개`:'';$('updated').textContent=`마지막 갱신: ${p.updatedAt||'없음'}`}
+async function search(){const q=$('query').value.trim(),province=$('province').value;const data=await api(`/api/complexes?q=${encodeURIComponent(q)}&province=${encodeURIComponent(province)}&offset=${cOffset}`);cTotal=data.total;$('message').textContent=`${cTotal.toLocaleString()}개 단지 그룹. 이름·주소가 같아도 원본 단지코드가 다르면 별도 표시합니다.`;$('complexes').innerHTML=data.rows.map(r=>`<tr><td><button data-id="${esc(r.id)}">${esc(r.name||'(원본명 없음)')}</button><small>${esc(r.complex_code)}</small></td><td>${esc(r.province)} ${esc(r.district)}<small>${esc(r.road_address)}</small></td><td>${Number(r.building_count).toLocaleString()}</td><td>${Number(r.unit_count).toLocaleString()}</td></tr>`).join('');$('page').textContent=`${Math.floor(cOffset/50)+1} / ${Math.max(1,Math.ceil(cTotal/50))}`;$('prev').disabled=cOffset===0;$('next').disabled=cOffset+50>=cTotal}
+async function units(){const building=$('building').value.trim(),d=await api(`/api/units?complex_id=${selected}&building=${encodeURIComponent(building)}&offset=${uOffset}`);uTotal=d.total;$('units').style.display='block';$('complex-title').textContent=d.complex.name||'(원본명 없음)';$('complex-address').textContent=`${d.complex.province} ${d.complex.district} · ${d.complex.road_address} · 원본 단지코드 ${d.complex.complex_code||'없음'}`;$('unit-count').textContent=`${uTotal.toLocaleString()}개 호수 행 · 현재 연결은 검증 전 후보입니다.`;$('unit-rows').innerHTML=d.rows.map(r=>{const links=r.planLinks||[];const strong=links.filter(x=>x.status==='provider-unit-area-consistent'&&JSON.parse(x.image_files||'[]').length);const label=strong.length?`<span class="good">면적·호수 일치 후보 ${strong.length}건</span>`:links.length?`<span class="warn">검토 필요 후보 ${links.length}건</span>`:'<span class="bad">현재 연결된 평면도 없음</span>';return `<tr><td>${esc(r.building||'동 이름 없음 · 원본 코드 '+r.building_code)}</td><td>${esc(r.unit)}</td><td>${esc(r.exclusive_area)}㎡</td><td>${label}${links.map(x=>`<small>${esc(x.entity)} · ${esc(x.status)} · 이미지 ${JSON.parse(x.image_files||'[]').length}개</small>`).join('')}</td></tr>`}).join('');$('unit-page').textContent=`${Math.floor(uOffset/100)+1} / ${Math.max(1,Math.ceil(uTotal/100))}`;$('unit-prev').disabled=uOffset===0;$('unit-next').disabled=uOffset+100>=uTotal}
+document.addEventListener('click',e=>{const button=e.target.closest('[data-id]');if(button){selected=button.dataset.id;uOffset=0;$('building').value='';units().then(()=>$('units').scrollIntoView()).catch(fail)}});
+$('search').onclick=()=>{cOffset=0;search().catch(fail)};$('query').onkeydown=e=>{if(e.key==='Enter')$('search').click()};$('province').onchange=()=>$('search').click();$('prev').onclick=()=>{cOffset-=50;search().catch(fail)};$('next').onclick=()=>{cOffset+=50;search().catch(fail)};$('unit-search').onclick=()=>{uOffset=0;units().catch(fail)};$('building').onkeydown=e=>{if(e.key==='Enter')$('unit-search').click()};$('unit-prev').onclick=()=>{uOffset-=100;units().catch(fail)};$('unit-next').onclick=()=>{uOffset+=100;units().catch(fail)};
+for(const name of ['서울특별시','경기도','부산광역시','인천광역시','대구광역시','대전광역시','광주광역시','울산광역시','세종특별자치시','강원특별자치도','충청북도','충청남도','전북특별자치도','전라남도','경상북도','경상남도','제주특별자치도']){$('province').add(new Option(name,name))}
+status().catch(fail);search().catch(fail);setInterval(()=>status().catch(fail),30000);
+</script>
+</html>

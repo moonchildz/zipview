@@ -78,10 +78,12 @@ function foliageGeometry() {
 }
 
 export function buildGrove(regions, options = {}) {
+  const groundAt = options.groundAt ?? (() => 0);
+  const {groundAt: groundFunction, ...serializableOptions} = options;
   const trees = sampleGrove(regions, options), group = new THREE.Group();
   group.name = 'vegetation';
   group.userData = {representation: 'procedural-grove', treeCount: trees.length,
-    placementStatus: 'inferred-within-mask', heightStatus: 'assumed', ...options};
+    placementStatus: 'inferred-within-mask', heightStatus: 'assumed', groundStatus: groundFunction ? 'terrain-sampled' : 'flat', ...serializableOptions};
   if (!trees.length) return group;
   const crowns = new THREE.InstancedMesh(foliageGeometry(), new THREE.MeshStandardMaterial({
     vertexColors: true, roughness: 1, flatShading: true}), trees.length * 13);
@@ -99,15 +101,17 @@ export function buildGrove(regions, options = {}) {
   };
   for (const tree of trees) {
     const rand = randomFor(`${tree.regionId}:${tree.seed}`), {x, z, height: h, radius: r} = tree;
-    branch(new THREE.Vector3(x, 0, z), new THREE.Vector3(x, h * 0.7, z), Math.min(0.16, r * 0.085));
+    const ground=groundAt(x,z);
+    if(!Number.isFinite(ground))throw new Error('Invalid tree ground elevation');
+    branch(new THREE.Vector3(x, ground, z), new THREE.Vector3(x, ground+h * 0.7, z), Math.min(0.16, r * 0.085));
     for (let i = 0; i < 3; i++) {
       const angle = i * Math.PI * 2 / 3 + rand();
-      branch(new THREE.Vector3(x, h * 0.35, z), new THREE.Vector3(x + Math.cos(angle) * r * 0.48, h * 0.73, z + Math.sin(angle) * r * 0.48), Math.min(0.07, r * 0.04));
+      branch(new THREE.Vector3(x, ground+h * 0.35, z), new THREE.Vector3(x + Math.cos(angle) * r * 0.48, ground+h * 0.73, z + Math.sin(angle) * r * 0.48), Math.min(0.07, r * 0.04));
     }
     for (let i = 0; i < 13; i++) {
       const angle = i * 2.39996 + rand() * 0.35, shell = i === 0 ? 0 : r * (0.35 + rand() * 0.2);
       const radius = i === 0 ? r * 0.77 : r * (0.32 + rand() * 0.12);
-      transform.position.set(x + Math.cos(angle) * shell, h * (i === 0 ? 0.65 : 0.55 + rand() * 0.27), z + Math.sin(angle) * shell);
+      transform.position.set(x + Math.cos(angle) * shell, ground+h * (i === 0 ? 0.65 : 0.55 + rand() * 0.27), z + Math.sin(angle) * shell);
       transform.rotation.set(0, rand() * Math.PI * 2, 0);
       transform.scale.set(radius, h * (i === 0 ? 0.31 : 0.16 + rand() * 0.09), radius);
       transform.updateMatrix(); crowns.setMatrixAt(leafIndex, transform.matrix);

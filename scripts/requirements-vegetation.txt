@@ -1,0 +1,7 @@
+# Install a CUDA-compatible torch build separately for GPU inference.
+transformers==5.12.1
+huggingface-hub==1.31.0
+rasterio==1.5.1
+Pillow==12.3.0
+numpy==2.5.2
+opencv-python==5.0.0.93

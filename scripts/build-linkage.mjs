@@ -127,11 +127,19 @@ if(existsSync('research/linkage/providers/kb'))for(const name of (await readdir(
     }
   }
   for(const b of provider.buildings)if(!buildings.some(r=>r.complexId===c.id&&r.building===b.building))buildings.push({...b,complexId:c.id,geometry:null});
+  const plansByArea=new Map(),firstUnit=new Map();
+  for(const p of plans)if(p.complexId===c.id){
+    if(!plansByArea.has(p.providerAreaId))plansByArea.set(p.providerAreaId,[]);
+    plansByArea.get(p.providerAreaId).push(p);
+  }
+  const providerUnitKey=u=>JSON.stringify([u.building,u.unit]);
+  for(const u of units)if(u.complexId===c.id&&!firstUnit.has(providerUnitKey(u)))firstUnit.set(providerUnitKey(u),u);
   for(const u of provider.units){
-    const matchingPlans=plans.filter(p=>p.complexId===c.id&&p.providerAreaId===u.areaId);
+    const matchingPlans=plansByArea.get(u.areaId)??[];
     const plan=matchingPlans.find(p=>p.variant==='basic')??matchingPlans[0];
-    if(!plan){units.push({...u,complexId:c.id,planId:null,source:provider.source});continue;}
-    const previous=units.find(r=>r.complexId===c.id&&r.building===u.building&&r.unit===u.unit);
+    const key=providerUnitKey(u);
+    if(!plan){const row={...u,complexId:c.id,planId:null,source:provider.source};units.push(row);if(!firstUnit.has(key))firstUnit.set(key,row);continue;}
+    const previous=firstUnit.get(key);
     if(previous){
       // A known provider identity may corroborate, but never silently replace, a chart/model link.
       if(previous.planId===plan.displayType){
@@ -140,7 +148,8 @@ if(existsSync('research/linkage/providers/kb'))for(const name of (await readdir(
         continue;
       }
     }
-    units.push({...u,complexId:c.id,planId:plan.id,source:provider.source});
+    const row={...u,complexId:c.id,planId:plan.id,source:provider.source};
+    units.push(row);if(!firstUnit.has(key))firstUnit.set(key,row);
   }
 }
 await connectHanshin({complexes,buildings,plans,units});

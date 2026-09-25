@@ -8,13 +8,14 @@ export async function importNgiiInbox({sheets,inbox,output,cache=new Map()}) {
   inbox=path.resolve(inbox);output=path.resolve(output);
   if(inbox===output)throw new Error('다운로드 수신 폴더와 mapinfo 폴더는 달라야 합니다.');
   const entries=await fs.readdir(inbox,{withFileTypes:true});
-  const folders=entries.filter(e=>e.isDirectory() && /^down_\d{6}_\d+$/.test(e.name));
+  // Support an explicitly selected download directory and native named subfolders.
+  const folders=[{name:'.'},...entries.filter(e=>e.isDirectory() && /^(?:down_\d{6}_\d+|map_all_\d+)$/.test(e.name))];
   const imported=[], conflicts=[], reviews=[];
   for(const folder of folders) {
     const source=path.join(inbox,folder.name);
     // Avoid following links/junctions outside the selected download root.
     const realSource=await fs.realpath(source),realInbox=await fs.realpath(inbox);
-    if(path.dirname(realSource).toLowerCase()!==realInbox.toLowerCase())continue;
+    if(realSource.toLowerCase()!==realInbox.toLowerCase() && path.dirname(realSource).toLowerCase()!==realInbox.toLowerCase())continue;
     const candidates=sheets.filter(s=>s.status!=='verified').map(s=>({...s,status:'pending',file:undefined}));
     await reconcileFiles(candidates,source,cache);
     for(const candidate of candidates.filter(s=>s.status==='review')) {

@@ -23,6 +23,8 @@ research/gyeonghuigung-xi/site-post.html
 # Reproducible regional downloads, local database, and reference-only drawings.
 research/seoul/raw/
 research/seoul/generated/
+research/osm/raw/
+research/osm/generated/
 research/linkage/generated/
 research/linkage/cache/
 research/linkage/providers/
@@ -32,5 +34,8 @@ research/linkage/downloads/
 mapinfo/*.zip
 mapinfo/*.xml
 mapinfo/*.partial
+mapinfo/ngi/
 down_*/
+satellite/
+__pycache__/
 종로구/
